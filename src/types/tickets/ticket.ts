@@ -16,6 +16,7 @@ export const ticketSchema = z.object({
   categoryName: z.string(),
   subCategoryName: z.string(),
   feedbackGiven: z.boolean().optional().nullable(),
+  currentWorkerStatus: workerComplaintStatusEnum.optional(),
 
 });
 
@@ -29,5 +30,5 @@ export const EmployeeTicketSchema = ticketSchema.extend({
 
 export default ticketSchema;
 
-export type ticket = z.infer<typeof workerTicketSchema>;
+export type ticket = z.infer<typeof ticketSchema>;
 export type employeeticket = z.infer<typeof EmployeeTicketSchema>;
