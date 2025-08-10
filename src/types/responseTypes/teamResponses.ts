@@ -42,7 +42,7 @@ export const getTeamsDataSchema = z.object({
  teams: z.array(z.object({
     id: z.number(),
     name: z.string(),
-    managerId: z.number().nullable(),
+    managerId: z.string().nullable(),
     managerName: z.string().nullable(),
 })) });
 

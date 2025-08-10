@@ -3,7 +3,7 @@ import {z} from 'zod';
 export const teamSchema = z.object({
     id: z.number(),
     name: z.string(),
-    managerId: z.number(),
+    managerId: z.string(),
     managerName: z.string(),
     description: z.string().optional(),
     createdAt: z.string(),

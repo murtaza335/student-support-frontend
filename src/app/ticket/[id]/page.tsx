@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, User, MapPin, Clock, Settings, Trash2, MoreVertical, Send, UserPlus, MessageSquare } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Clock, Settings, Trash2, MoreVertical, Send, UserPlus, MessageSquare, Edit3 } from 'lucide-react';
 import { api } from '~/trpc/react';
 import { format } from 'date-fns';
 import Loader from '~/app/_components/Loader';
@@ -11,7 +11,7 @@ import { complaintStatusColorMap } from '~/lib/statusColorMap';
 import type { WorkerComplaintStatus } from '~/types/enums';
 import PopupImageViewer from '~/app/_components/PopupImageViewer';
 import { useState } from 'react';
-import MyTeamPopup from '~/app/ticket/myTeamPopups';
+import EditAssignmentPopup from '~/app/ticket/myTeamPopups';
 import ForwardTeamPopup from '~/app/ticket/forwardComplaintPopup';
 import { useUser } from '@clerk/nextjs';
 // import type { log } from '~/types/logs/log';
@@ -41,8 +41,8 @@ export default function TicketDetailPage() {
   const [isFeedbackPopupOpen, setIsFeedbackPopupOpen] = useState(false);
   // to toggle the close ticket modal, this is only for workers
   const [showCloseModal, setShowCloseModal] = useState(false);
-  // to toggle the add worker popup
-  const [isAddWorkerPopupOpen, setIsAddWorkerPopupOpen] = useState(false);
+  // to toggle the edit assignment popup
+  const [isEditAssignmentPopupOpen, setIsEditAssignmentPopupOpen] = useState(false);
 
   // const [shouldFetchTeams, setShouldFetchTeams] = useState(false);
   // const [shouldFetchMyTeamMembers, setShouldFetchMyTeamMembers] = useState(false);
@@ -142,14 +142,14 @@ export default function TicketDetailPage() {
 
   useEffect(() => {
     if (isAddWorkerSuccess) {
-      addToast('Worker added to assignment successfully!', 'success');
+      addToast('Worker assignment updated successfully!', 'success');
       router.refresh();
-      setIsAddWorkerPopupOpen(false);
+      setIsEditAssignmentPopupOpen(false);
     }
 
     if (isAddWorkerError) {
-      console.error('Error adding worker:', addWorkerError);
-      addToast('Failed to add worker to assignment. Please try again.', 'error');
+      console.error('Error updating assignment:', addWorkerError);
+      addToast('Failed to update assignment. Please try again.', 'error');
     }
   }, [isAddWorkerSuccess, isAddWorkerError, addWorkerError, router, addToast]);
 
@@ -318,15 +318,15 @@ export default function TicketDetailPage() {
               {(complaint?.status === "in_progress" || complaint?.status === "assigned" || complaint?.status === "in_queue") && (user?.publicMetadata?.role === 'manager') && (
                 <button
                   className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={() => { setIsAddWorkerPopupOpen(true); console.log('Adding worker to assignment...'); }}
+                  onClick={() => { setIsEditAssignmentPopupOpen(true); console.log('Opening edit assignment...'); }}
                   disabled={isAddingWorker}
                 >
                   {isAddingWorker ? (
                     <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <UserPlus className="h-4 w-4 mr-2" />
+                    <Edit3 className="h-4 w-4 mr-2" />
                   )}
-                  Add Worker
+                  Edit Assignment
                 </button>
               )}
               {(complaint?.status === "waiting_assignment" || complaint?.status === "reopened") && user?.publicMetadata?.role === 'manager' && (
@@ -399,19 +399,19 @@ export default function TicketDetailPage() {
               </button>
             )}
 
-            {/* Add Worker Button for Managers */}
+            {/* Edit Assignment Button for Managers */}
             {(complaint?.status === "in_progress" || complaint?.status === "assigned" || complaint?.status === "in_queue") && user?.publicMetadata?.role === 'manager' && (
               <button 
                 className="flex-shrink-0 inline-flex items-center justify-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => { setIsAddWorkerPopupOpen(true); console.log('Adding worker to assignment...'); }}
+                onClick={() => { setIsEditAssignmentPopupOpen(true); console.log('Opening edit assignment...'); }}
                 disabled={isAddingWorker}
               >
                 {isAddingWorker ? (
                   <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <UserPlus className="h-4 w-4 mr-2" />
+                  <Edit3 className="h-4 w-4 mr-2" />
                 )}
-                Add Worker
+                Edit Assignment
               </button>
             )}
 
@@ -694,12 +694,12 @@ export default function TicketDetailPage() {
               />
             )}
 
+            {/* Initial Assignment Popup */}
             {
-              <MyTeamPopup
+              <EditAssignmentPopup
                 open={isMyTeamPopupOpen}
                 setOpen={setIsMyTeamPopupOpen}
                 complaintId={ticketId}
-                mode="initial-assignment"
                 assignedWorkers={
                   complaint?.assignedWorkers
                     ? complaint.assignedWorkers.workers.map((worker: { workerId: number; workerName: string; workerUserId?: string; teamId?: number; status?: string; name?: string }) => ({
@@ -712,16 +712,16 @@ export default function TicketDetailPage() {
                     }))
                     : undefined
                 }
+                mode="initial-assignment"
               />
             }
 
-            {/* Add Worker Popup - Reusing MyTeamPopup for adding workers */}
+            {/* Edit Assignment Popup */}
             {
-              <MyTeamPopup
-                open={isAddWorkerPopupOpen}
-                setOpen={setIsAddWorkerPopupOpen}
+              <EditAssignmentPopup
+                open={isEditAssignmentPopupOpen}
+                setOpen={setIsEditAssignmentPopupOpen}
                 complaintId={ticketId}
-                mode="add-worker"
                 assignedWorkers={
                   complaint?.assignedWorkers
                     ? complaint.assignedWorkers.workers.map((worker: { workerId: number; workerName: string; workerUserId?: string; teamId?: number; status?: string; name?: string }) => ({
@@ -734,6 +734,7 @@ export default function TicketDetailPage() {
                     }))
                     : undefined
                 }
+                mode="edit"
               />
             }
 

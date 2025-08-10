@@ -10,7 +10,7 @@ export const submissionPreferenceEnum = z.enum(["remote", "on_site", "call_back"
 export type SubmissionPreference = z.infer<typeof submissionPreferenceEnum>;
 
 export const complaintStatusEnum = z.enum(["waiting_assignment", "assigned", "in_progress", "resolved", "closed", "escalated_level_1",
-  "escalated_level_2","reopened", "in_queue"]);
+  "escalated_level_2","reopened", "in_queue", "change_worker"]);
 export type ComplaintStatus = z.infer<typeof complaintStatusEnum>;
 
 export const priorityEnum = z.enum(["low", "medium", "high", "urgent"]);
