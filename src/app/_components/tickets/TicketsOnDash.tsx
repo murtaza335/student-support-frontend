@@ -120,7 +120,7 @@ const TicketsOnDash = ({ tickets, isLoading}: TicketsOnDashProps) => {
         if (!tickets) return 0;
         
         if (role === 'worker') {
-            return tickets.filter(ticket => ticket.status === 'in_queue').length;
+            return tickets.filter(ticket => ticket.currentWorkerStatus === 'in_queue').length;
         }
         
         if (role === 'employee') {

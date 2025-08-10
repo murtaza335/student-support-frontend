@@ -29,5 +29,5 @@ export const EmployeeTicketSchema = ticketSchema.extend({
 
 export default ticketSchema;
 
-export type ticket = z.infer<typeof ticketSchema>;
+export type ticket = z.infer<typeof workerTicketSchema>;
 export type employeeticket = z.infer<typeof EmployeeTicketSchema>;

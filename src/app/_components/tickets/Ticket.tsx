@@ -31,7 +31,7 @@ const ComplaintCard = ({ ticket }: TicketProps) => {
 
   // Check if activate button should be shown
   const shouldShowActivateButton = () => {
-    return role === 'worker' && ticket?.status === 'in_queue';
+    return role === 'worker' && ticket?.currentWorkerStatus === 'in_queue';
   };
 
   // api to activate the complaint
