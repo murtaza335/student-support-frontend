@@ -16,48 +16,6 @@ import { AddMemberModal } from './AddMemeberModal';
 import type { Team } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
 import type { Manager } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
 import type { Member } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
-import type { Privileges } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
-
-// // Type definitions
-// export interface Privileges {
-//   canAddMembers: boolean;
-//   canRemoveMembers: boolean;
-//   canEditTasks: boolean;
-//   canViewReports: boolean;
-//   canManageBudget: boolean;
-//   canAccessSettings: boolean;
-// }
-
-// export interface Manager {
-//   id: string;
-//   name: string;
-//   email: string;
-//   phone: string;
-//   picUrl: string;
-//   privileges: Privileges;
-// }
-
-// export interface Member {
-//   id: string;
-//   name: string;
-//   role: string;
-//   email: string;
-//   phone: string;
-//   status: TeamWorkerStatus;
-//   joinDate: string;
-//   picUrl: string;
-//   points: number;
-// }
-
-// export interface Team {
-//   id: number;
-//   name: string;
-//   description: string;
-//   // status: 'active' | 'inactive';
-//   createdDate: string;
-//   manager: Manager | null;
-//   members: Member[] | [];
-// }
 
 export interface AvailableManager {
   id: number;

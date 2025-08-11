@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import type { Manager } from './page';
+import type { Manager } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
 
 interface PrivilegesModalProps {
     closeModal: () => void;
@@ -12,13 +12,13 @@ export const PrivilegesModal: React.FC<PrivilegesModalProps> = ({ closeModal, se
       <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl">
         <h3 className="text-lg font-semibold mb-4">Manager Privileges - {selectedManager?.name}</h3>
         <div className="space-y-4">
-          {selectedManager?.privileges && Object.entries(selectedManager.privileges).map(([key, value]: [string, boolean]) => (
+          {selectedManager?.privileges && Object.entries(selectedManager.privileges).map(([key, value], idx) => (
             <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl shadow-sm">
               <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
               <label className="flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked={value} className="sr-only" />
-                <div className={`w-12 h-6 rounded-full ${value ? 'bg-blue-600' : 'bg-gray-300'} relative transition-colors shadow-inner`}>
-                  <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform shadow-md ${value ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                <input type="checkbox" defaultChecked={value as boolean} className="sr-only" />
+                <div className={`w-12 h-6 rounded-full ${(value as boolean) ? 'bg-blue-600' : 'bg-gray-300'} relative transition-colors shadow-inner`}>
+                  <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform shadow-md ${(value as boolean) ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
                 </div>
               </label>
             </div>

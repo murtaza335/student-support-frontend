@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type {Team } from './page'; // Adjust the import path as necessary
+import type { Team } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
 
 interface AddMemberModalProps { 
     closeModal: () => void;
