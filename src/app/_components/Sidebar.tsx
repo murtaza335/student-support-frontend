@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Users, UserPlus, UserCircle, Plus, Menu, X ,TrendingUp} from 'lucide-react';
+import { Home, Users, UserPlus, UserCircle, Plus, Menu, X, TrendingUp, Building2 } from 'lucide-react';
 import '~/styles/globals.css';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
@@ -71,6 +71,17 @@ const Sidebar = () => {
         setIsExpanded(false);
       },
       roles : ['manager', 'worker']
+    },
+    {
+      name: 'Organization Hierarchy',
+      icon: Building2,
+      color: 'purple',
+      size: 20,
+      onClick: () => {
+        router.push('/dashboard/admin/organizationHierarchy');
+        setIsExpanded(false);
+      },
+      roles: ['admin'],
     },
     {
       name: 'Registrations',

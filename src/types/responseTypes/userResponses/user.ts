@@ -7,15 +7,15 @@ const getMyInfoDataSchema = z.object({
     firstName: z.string(),
     lastName: z.string(),
     email: z.string().email(),
-    picUrl: z.string().url(),
-    officeNumber: z.string().optional(),
-    department: z.string(),
-    designation: z.string(),
-    phone: z.string(),
+    picUrl: z.string().url().optional().nullable(),
+    officeNumber: z.string().optional().nullable(),
+    department: z.string().optional().nullable(),
+    designation: z.string().optional().nullable(),
+    phone: z.string().optional().nullable(),
     role: userRolesEnum,
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
-    locationName: z.string().max(100)
+    locationName: z.string().max(100).optional().nullable(),
 });
 
 const getUserInfoDataSchema = z.object({
