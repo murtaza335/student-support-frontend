@@ -8,8 +8,8 @@ interface AddMemberModalProps {
     teamsData: Team[];
 };
 export const AddMemberModal: React.FC<AddMemberModalProps> = ({ closeModal, teamsData }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
         <h3 className="text-lg font-semibold mb-4">Add Team Member</h3>
         <div className="space-y-4">
           <input type="text" placeholder="Member Name" className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm" />

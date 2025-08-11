@@ -7,7 +7,7 @@ import '~/styles/globals.css';
 import { ToastProvider } from './_components/ToastProvider';
 import Footer from './_components/footer/footer';
 import Sidebar from './_components/Sidebar';
-// import { SocketProvider } from './_components/NotificationProvider';
+import { SocketProvider } from './_components/NotificationProvider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,7 +35,7 @@ export default function RootLayout({
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           <TRPCReactProvider>
             {/* ✅ SocketProvider here so Navbar, Sidebar, pages all get real-time updates */}
-            {/* <SocketProvider> */}
+            <SocketProvider>
               <ToastProvider>
                 <div className="flex min-h-screen flex-col">
                   <Navbar />
@@ -48,7 +48,7 @@ export default function RootLayout({
                 </div>
                 <Footer />
               </ToastProvider>
-            {/* </SocketProvider> */}
+            </SocketProvider>
           </TRPCReactProvider>
         </body>
       </html>

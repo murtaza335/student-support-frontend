@@ -3,6 +3,31 @@
 import { User2, X, Users, Clock, CheckCircle, Plus, Minus, UserPlus, UserMinus, AlertTriangle, ArrowRight } from 'lucide-react';
 import type { WorkerAssignment } from '~/types/teams/workerAssignment';
 
+// Add CSS for custom scrollbar
+const scrollbarStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = scrollbarStyles;
+  document.head.appendChild(style);
+}
+
 
 // Add Workers Section Component
 export function AddWorkersSection({ 
@@ -63,7 +88,7 @@ export function AddWorkersSection({
       )}
 
       {/* Workers List */}
-      <div className="px-4 sm:px-6 py-4 sm:py-5 flex-1 overflow-hidden min-h-0 max-h-[calc(100%-8rem)]">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 flex-1 overflow-hidden min-h-0">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-8 sm:py-12 min-h-[200px]">
             <div className="relative">
@@ -81,7 +106,7 @@ export function AddWorkersSection({
             <p className="text-slate-400 text-xs sm:text-sm mt-1">Add team members to get started</p>
           </div>
         ) : (
-          <div className="space-y-2 sm:space-y-3 max-h-64 sm:max-h-[40vh] lg:max-h-[50vh] overflow-hidden pr-2 pb-4">
+          <div className="space-y-2 sm:space-y-3 max-h-64 sm:max-h-[40vh] lg:max-h-[50vh] overflow-y-auto custom-scrollbar pr-2 pb-4">
             {workers?.map((worker: WorkerAssignment, index: number) => {
               const isAssigned = isWorkerAssigned(worker);
               const isSelected = isWorkerSelected(worker.workerId);
@@ -152,7 +177,7 @@ export function ReplaceAssignmentSection({
   }
 
   return (
-    <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-6 h-full max-h-[calc(100vh-25rem)] sm:max-h-[calc(85vh-25rem)] lg:max-h-[calc(80vh-23rem)] overflow-hidden pr-2 pb-4">
+    <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-6 h-full max-h-[calc(100vh-25rem)] sm:max-h-[calc(85vh-25rem)] lg:max-h-[calc(80vh-23rem)] overflow-y-auto custom-scrollbar pr-2 pb-4">
       {/* Current Worker Selection */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
