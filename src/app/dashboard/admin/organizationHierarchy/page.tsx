@@ -2,13 +2,18 @@
 
 import React, { useState } from 'react';
 import { 
-  Users, User, Crown, Plus, Edit, Trash2, Settings, Search, Filter,
-  ChevronDown, ChevronRight, Mail, Phone, MapPin, Calendar, Clock,
-  UserPlus, UserMinus, Shield, Eye, EyeOff, Save, X, Check
+  Users, User, Crown, Plus, Edit, Settings, Search,
+  ChevronDown, ChevronRight, Mail, Phone, Calendar, Clock,
+  UserPlus, UserMinus, Shield
 } from 'lucide-react';
 
+import { AddTeamModal } from './AddTeamModal';
+import { EditManagerModal } from './EditManagerModal';
+import { PrivilegesModal } from './PrivilegesModal';
+import { AddMemberModal } from './AddMemeberModal';
+
 // Type definitions
-interface Privileges {
+export interface Privileges {
   canAddMembers: boolean;
   canRemoveMembers: boolean;
   canEditTasks: boolean;
@@ -17,7 +22,7 @@ interface Privileges {
   canAccessSettings: boolean;
 }
 
-interface Manager {
+export interface Manager {
   id: number;
   name: string;
   email: string;
@@ -27,7 +32,7 @@ interface Manager {
   privileges: Privileges;
 }
 
-interface Member {
+export interface Member {
   id: number;
   name: string;
   role: string;
@@ -38,7 +43,7 @@ interface Member {
   avatar: string;
 }
 
-interface Team {
+export interface Team {
   id: number;
   name: string;
   description: string;
@@ -48,7 +53,7 @@ interface Team {
   members: Member[];
 }
 
-interface AvailableManager {
+export interface AvailableManager {
   id: number;
   name: string;
   email: string;
@@ -252,129 +257,6 @@ const TeamManagementDashboard: React.FC = () => {
   // Statistics with proper typing
   const totalMembers: number = teamsData.reduce((acc: number, team: Team) => acc + team.members.length, 0);
   const activeTeams: number = teamsData.filter((team: Team) => team.status === 'active').length;
-
-  // Modal Components with proper typing
-  const AddTeamModal: React.FC = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="text-lg font-semibold mb-4">Add New Team</h3>
-        <div className="space-y-4">
-          <input type="text" placeholder="Team Name" className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm" />
-          <textarea placeholder="Description" className="w-full p-3 rounded-lg h-20 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm resize-none"></textarea>
-          <select className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm">
-            <option value="">Select Manager</option>
-            {availableManagers.map((manager: AvailableManager) => (
-              <option key={manager.id} value={manager.id}>{manager.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl">
-            Create Team
-          </button>
-          <button 
-            onClick={closeModal}
-            className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const EditManagerModal: React.FC = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="text-lg font-semibold mb-4">Change Team Manager</h3>
-        <div className="space-y-4">
-          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-            Current Manager: <span className="font-medium">{selectedTeam?.manager?.name}</span>
-          </div>
-          <select className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm">
-            <option value="">Select New Manager</option>
-            {availableManagers.map((manager: AvailableManager) => (
-              <option key={manager.id} value={manager.id}>{manager.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl">
-            Update Manager
-          </button>
-          <button 
-            onClick={closeModal}
-            className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const PrivilegesModal: React.FC = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl">
-        <h3 className="text-lg font-semibold mb-4">Manager Privileges - {selectedManager?.name}</h3>
-        <div className="space-y-4">
-          {selectedManager?.privileges && Object.entries(selectedManager.privileges).map(([key, value]: [string, boolean]) => (
-            <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl shadow-sm">
-              <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
-              <label className="flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked={value} className="sr-only" />
-                <div className={`w-12 h-6 rounded-full ${value ? 'bg-blue-600' : 'bg-gray-300'} relative transition-colors shadow-inner`}>
-                  <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform shadow-md ${value ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
-                </div>
-              </label>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl">
-            Save Changes
-          </button>
-          <button 
-            onClick={closeModal}
-            className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const AddMemberModal: React.FC = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="text-lg font-semibold mb-4">Add Team Member</h3>
-        <div className="space-y-4">
-          <input type="text" placeholder="Member Name" className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm" />
-          <input type="email" placeholder="Email Address" className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm" />
-          <input type="tel" placeholder="Phone Number" className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm" />
-          <input type="text" placeholder="Role/Position" className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm" />
-          <select className="w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm">
-            <option value="">Select Team</option>
-            {teamsData.map((team: Team) => (
-              <option key={team.id} value={team.id}>{team.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg hover:shadow-xl">
-            Add Member
-          </button>
-          <button 
-            onClick={closeModal}
-            className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="p-4 lg:p-6 bg-gray-50 min-h-screen">
@@ -717,10 +599,10 @@ const TeamManagementDashboard: React.FC = () => {
       )}
 
       {/* Modals */}
-      {activeModal === 'addTeam' && <AddTeamModal />}
-      {activeModal === 'editManager' && <EditManagerModal />}
-      {activeModal === 'privileges' && <PrivilegesModal />}
-      {activeModal === 'addMember' && <AddMemberModal />}
+      {activeModal === 'addTeam' && <AddTeamModal availableManagers={availableManagers} closeModal={closeModal} />}
+      {activeModal === 'editManager' && <EditManagerModal closeModal={closeModal} availableManagers={availableManagers} />}
+      {activeModal === 'privileges' && <PrivilegesModal selectedManager={selectedManager ?? undefined} closeModal={closeModal} />}
+      {activeModal === 'addMember' && <AddMemberModal teamsData={teamsData} closeModal={closeModal} />}
     </div>
   );
 };
