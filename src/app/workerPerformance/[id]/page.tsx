@@ -6,8 +6,21 @@ import { useParams } from 'next/navigation';
 import { Clock, User, Star, AlertTriangle, CheckCircle, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import { api } from '~/trpc/react';
-import { set } from 'date-fns';
 
+
+interface TooltipPayloadEntry {
+    color: string;
+    name: string;
+    value: number | string;
+    dataKey: string;
+    payload: Record<string, unknown>;
+}
+
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: TooltipPayloadEntry[];
+    label?: string;
+}
 
 const WorkerPerformanceDashboard: React.FC = () => {
     const params = useParams();
@@ -51,7 +64,7 @@ const WorkerPerformanceDashboard: React.FC = () => {
             endDate: dateRange.endDate ?? null,
             startDate: dateRange.startDate ?? null
         });
-        refetch();
+        void refetch();
     };
 
     if (isLoading) {
@@ -95,7 +108,7 @@ const WorkerPerformanceDashboard: React.FC = () => {
             'High': '#f97316',
             'Medium': '#eab308',
             'Low': '#22c55e'
-        }[item.priority.charAt(0).toUpperCase() + item.priority.slice(1)] || '#6b7280'
+        }[item.priority.charAt(0).toUpperCase() + item.priority.slice(1)] ?? '#6b7280'
     }));
 
     const resolutionTimeData = [
@@ -136,12 +149,12 @@ const WorkerPerformanceDashboard: React.FC = () => {
 
 
     //   tooltip for all the graphs
-    const CustomTooltip = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
+    const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+        if (active && payload?.length) {
             return (
                 <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
                     <p className="font-medium">{label}</p>
-                    {payload.map((entry: any, index: number) => (
+                    {payload.map((entry, index) => (
                         <p key={index} style={{ color: entry.color }}>
                             {entry.name}: {entry.name === 'avgHours' ? formatHours(entry.value) : entry.value}
                         </p>

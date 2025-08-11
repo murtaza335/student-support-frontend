@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, User, MapPin, Clock, Settings, Trash2, MoreVertical, Send, UserPlus, MessageSquare, Edit3 } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Clock, Settings, Trash2, MoreVertical, Send, MessageSquare, Edit3 } from 'lucide-react';
 import { api } from '~/trpc/react';
 import { format } from 'date-fns';
 import Loader from '~/app/_components/Loader';
