@@ -2,7 +2,6 @@ import { z } from "zod";
 import { responseSchema } from "~/lib/responseSchema";
 
 const workerSchema = z.object({
-  id: z.string(), // '16' as string
   teamWorkerId: z.number(),
   teamId: z.number(),
   points: z.number(),
@@ -17,22 +16,22 @@ const timeMetricsSchema = z.object({
 });
 
 const statusCountsSchema = z.object({
-  totalAssigned: z.string().nullable(),
-  active: z.string().nullable(),
-  inQueue: z.string().nullable(),
-  resolved: z.string().nullable(),
+  totalAssigned: z.number().nullable(),
+  active: z.number().nullable(),
+  inQueue: z.number().nullable(),
+  resolved: z.number().nullable(),
 });
 
 const ratingsSchema = z.object({
-  totalRatings: z.string().nullable(),
+  totalRatings: z.number().nullable(),
   averageRating: z.number().nullable(),
   minRating: z.number().nullable(),
   maxRating: z.number().nullable(),
 });
 
 const reopenMetricsSchema = z.object({
-  totalResolved: z.string().nullable(),
-  reopenedCount: z.string().nullable(),
+  totalResolved: z.number().nullable(),
+  reopenedCount: z.number().nullable(),
   reopenPercentage: z.number().nullable(),
 });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Users, UserPlus, UserCircle, Plus, Menu, X, TrendingUp, Building2 } from 'lucide-react';
+import { Home, Users, UserPlus, UserCircle, Plus, Menu, X, TrendingUp, Building2,BarChart2 } from 'lucide-react';
 import '~/styles/globals.css';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
@@ -116,6 +116,17 @@ const Sidebar = () => {
       },
       roles: ['admin'],
     },
+    {
+    name: 'Team Comparison',
+    icon: BarChart2,
+    color: 'orange',
+    size: 20,
+    onClick: () => {
+      router.push('/dashboard/admin/teamComparison');
+      setIsExpanded(false);
+    },
+    roles: ['admin'],
+  },
     // {
     //   name: 'Logout',
     //   icon: LogOut,

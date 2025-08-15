@@ -241,7 +241,6 @@ export type Manager = z.infer<typeof managerSchema>;
 export const memberSchema = z.object({
   id: z.string(),
   name: z.string(),
-  role: z.string(),
   email: z.string().email(),
   phone: z.string().nullable(),
   picUrl: z.string().url().nullable(),

@@ -94,9 +94,9 @@ const WorkerPerformanceDashboard: React.FC = () => {
 
     // Prepare chart data
     const statusChartData = [
-        { name: 'Resolved', value: parseInt(workerPerformance?.statusCounts?.resolved ?? '0'), color: '#10b981' },
-        { name: 'In Queue', value: parseInt(workerPerformance?.statusCounts?.inQueue ?? '0'), color: '#f59e0b' },
-        { name: 'Active', value: parseInt(workerPerformance?.statusCounts?.active ?? '0'), color: '#3b82f6' }
+        { name: 'Resolved', value: parseInt(String(workerPerformance?.statusCounts?.resolved ?? '0')), color: '#10b981' },
+        { name: 'In Queue', value: parseInt(String(workerPerformance?.statusCounts?.inQueue ?? '0')), color: '#f59e0b' },
+        { name: 'Active', value: parseInt(String(workerPerformance?.statusCounts?.active ?? '0')), color: '#3b82f6' }
     ].filter(item => item.value > 0);
 
     const priorityChartData = workerPerformance?.priorityBreakdown?.map(item => ({
@@ -118,8 +118,8 @@ const WorkerPerformanceDashboard: React.FC = () => {
     ];
 
     const qualityMetricsData = [
-        { name: 'Completed Successfully', value: parseInt(workerPerformance.reopenMetrics.totalResolved ?? '0') - parseInt(workerPerformance.reopenMetrics.reopenedCount ?? '0') },
-        { name: 'Reopened', value: parseInt(workerPerformance.reopenMetrics.reopenedCount ?? '0') }
+        { name: 'Completed Successfully', value: parseInt(String(workerPerformance.reopenMetrics.totalResolved ?? '0')) - parseInt(String(workerPerformance.reopenMetrics.reopenedCount ?? '0')) },
+        { name: 'Reopened', value: parseInt(String(workerPerformance.reopenMetrics.reopenedCount ?? '0')) }
     ];
 
     const getStatusColor = (status: string) => {
@@ -213,7 +213,7 @@ const WorkerPerformanceDashboard: React.FC = () => {
                             </div>
                             <div>
                                 <h2 className="text-xl font-semibold text-gray-900">Worker #{workerPerformance.worker.teamWorkerId}</h2>
-                                <p className="text-gray-600">Team ID: {workerPerformance.worker.teamId} • Worker ID: {workerPerformance.worker.id}</p>
+                                <p className="text-gray-600">Team ID: {workerPerformance.worker.teamId} • Worker ID: {workerId}</p>
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
@@ -369,7 +369,7 @@ const WorkerPerformanceDashboard: React.FC = () => {
                         <div className="space-y-4">
                             {/* Performance Score Visual */}
                             <div className="text-center mb-6">
-                                {parseInt(workerPerformance.ratings.totalRatings ?? '0') === 0 ? (
+                                {parseInt(String(workerPerformance.ratings.totalRatings ?? '0')) === 0 ? (
                                     <div className="text-gray-500">
                                         <Star className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                                         <p>No ratings available yet</p>
@@ -394,7 +394,7 @@ const WorkerPerformanceDashboard: React.FC = () => {
                                 <div className="flex justify-between items-center p-3 bg-green-50 rounded">
                                     <span className="text-gray-600">Completion Rate</span>
                                     <span className="font-semibold text-green-600">
-                                        {((parseInt(workerPerformance?.statusCounts?.resolved ?? '0') / parseInt(workerPerformance?.statusCounts?.totalAssigned ?? '0')) * 100).toFixed(1)}%
+                                        {((parseInt(String(workerPerformance?.statusCounts?.resolved ?? '0')) / parseInt(String(workerPerformance?.statusCounts?.totalAssigned ?? '0'))) * 100).toFixed(1)}%
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center p-3 bg-blue-50 rounded">

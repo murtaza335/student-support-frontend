@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '~/trpc/react';
 import Image from 'next/image';
+import { useUser } from '@clerk/nextjs';
 
 import { AddTeamModal } from './AddTeamModal';
 import { EditManagerModal } from './EditManagerModal';
@@ -16,6 +17,10 @@ import { AddMemberModal } from './AddMemeberModal';
 import type { Team } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
 import type { Manager } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
 import type { Member } from '~/types/responseTypes/adminDashResponses/adminDashResponses';
+import LoginRequired from '~/app/_components/unauthorized/loginToContinue';
+import Unauthorized from '~/app/_components/unauthorized/unauthorized';
+import Loader from '~/app/_components/Loader';
+import { useRouter } from 'next/navigation';
 
 export interface AvailableManager {
   id: number;
@@ -28,6 +33,8 @@ type FilterStatus = 'all' | 'active' | 'inactive';
 type ModalType = 'addTeam' | 'editManager' | 'privileges' | 'addMember' | null;
 
 const TeamManagementDashboard: React.FC = () => {
+  const router = useRouter();
+  const { user, isSignedIn, isLoaded } = useUser();
   // State management with proper typing
   const [expandedTeams, setExpandedTeams] = useState<Set<number>>(new Set([1]));
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -43,6 +50,22 @@ const TeamManagementDashboard: React.FC = () => {
 
   const teamsData: Team[] = getTeamHierarchyResponse?.data?.teams ?? [];
 
+
+    // below 3 if's are used to handle the loading state, unauthorized access, and user role verification
+    // and the same is being used in all the dashboard pages
+  
+    if (!isLoaded && isLoading) {
+      return <div className="flex min-h-screen items-center justify-center">
+        <Loader />
+        <p className="text-gray-500 pl-5">Please wait, while we authorize you...</p>
+      </div>;
+    }
+    if (isLoaded && !isSignedIn) {
+      return <LoginRequired />;
+    }
+    if (user?.publicMetadata.role !== 'admin') {
+      return <Unauthorized />;
+    }
 
   console.log('[TeamManagementDashboard] Initial teams data:', teamsData);
 
@@ -344,7 +367,7 @@ const TeamManagementDashboard: React.FC = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h5 className="font-semibold text-gray-900 truncate text-sm sm:text-base">{member.name}</h5>
-                                <p className="text-xs sm:text-sm text-gray-600 truncate mt-1">{member.role}</p>
+                                {/* <p className="text-xs sm:text-sm text-gray-600 truncate mt-1">{member.role}</p> */}
                                 <div className="flex items-center gap-2 mt-2">
                                   <span className={`text-xs px-2 sm:px-3 py-1 rounded-full font-medium ${getStatusColor(member.status)}`}>
                                     {member.status}
@@ -400,7 +423,7 @@ const TeamManagementDashboard: React.FC = () => {
                     <button className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium">
                       Team Settings
                     </button>
-                    <button className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors font-medium">
+                    <button className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors font-medium" onClick={() => router.push(`/dashboard/admin/teamPerformance/${team.id}`)}>
                       Performance
                     </button>
                     <button className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium ml-auto">
