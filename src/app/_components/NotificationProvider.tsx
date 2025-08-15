@@ -4,12 +4,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useUser } from '@clerk/nextjs';
 import { api } from '~/trpc/react';
-// import { useToast } from './ToastProvider';
+import { useToast } from './ToastProvider';
+import { playNotificationSound } from '~/utils/playNotificationSound';
 
 type BackendNotification = {
     type: string; // e.g., "COMPLAINT_CREATED"
     action: string; // e.g., "CREATE", "UPDATE"
-    data: any;
+    data: unknown;
     timestamp: string;
 };
 
@@ -32,11 +33,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const [socket, setSocket] = useState<Socket | null>(null);
     const [notifications, setNotifications] = useState<BackendNotification[]>([]);
     const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
-    //   const { addToast } = useToast();
+    const { addToast } = useToast();
     const utils = api.useUtils();
 
     // Socket configuration
-    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://624781354803.ngrok-free.app';
+    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
     const SOCKET_ENABLED = process.env.NEXT_PUBLIC_SOCKET_ENABLED !== 'false';
 
     useEffect(() => {
@@ -158,21 +159,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         // Add reconnection attempt logging
         s.on('reconnect_attempt', (attempt) => {
             setConnectionStatus('connecting');
-            console.log('🔄 Reconnection attempt', {
-                attempt,
-                userId: user.id,
-                timestamp: new Date().toISOString()
-            });
+            // console.log('🔄 Reconnection attempt', {
+            //     attempt,
+            //     userId: user.id,
+            //     timestamp: new Date().toISOString()
+            // });
         });
 
         s.on('reconnect', (attempt) => {
             setConnectionStatus('connected');
-            console.log('🎉 Reconnected successfully', {
-                attempt,
-                socketId: s.id,
-                userId: user.id,
-                timestamp: new Date().toISOString()
-            });
+            // console.log('🎉 Reconnected successfully', {
+            //     attempt,
+            //     socketId: s.id,
+            //     userId: user.id,
+            //     timestamp: new Date().toISOString()
+            // });
 
             // Rejoin room after reconnection
             const roomId = user.id;
@@ -187,11 +188,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         s.on('reconnect_error', (error) => {
             setConnectionStatus('error');
-            console.error('❌ Reconnection error:', {
-                error: error.message,
-                userId: user.id,
-                timestamp: new Date().toISOString()
-            });
+            // console.error('❌ Reconnection error:', {
+            //     error: error.message,
+            //     userId: user.id,
+            //     timestamp: new Date().toISOString()
+            // });
         });
 
         s.on('reconnect_failed', () => {
@@ -205,75 +206,78 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Room join event listeners
         s.on('roomJoined', (data) => {
-            console.log('✅ Successfully joined room:', {
-                room: data.room,
-                userId: user.id,
-                socketId: s.id,
-                timestamp: new Date().toISOString(),
-                message: data.message || 'Room joined successfully'
-            });
+            // console.log('✅ Successfully joined room:', {
+            //     room: data.room,
+            //     userId: user.id,
+            //     socketId: s.id,
+            //     timestamp: new Date().toISOString(),
+            //     message: data.message || 'Room joined successfully'
+            // });
         });
 
         s.on('roomJoinError', (error) => {
-            console.error('❌ Failed to join room:', {
-                error: error.message || error,
-                room: error.room,
-                userId: user.id,
-                socketId: s.id,
-                timestamp: new Date().toISOString()
-            });
+            // console.error('❌ Failed to join room:', {
+            //     error: error.message || error,
+            //     room: error.room,
+            //     userId: user.id,
+            //     socketId: s.id,
+            //     timestamp: new Date().toISOString()
+            // });
         });
 
         setSocket(s);
 
-        s.on('complaint_notification', (notif: BackendNotification) => {
+    s.on('complaint_notification', async (notif: BackendNotification) => {
 
-            console.log('🔔 Processing notification', notif);
-            console.log('📩 Received notification:', {
-                type: notif.type,
-                action: notif.action,
-                data: notif.data,
-                timestamp: notif.timestamp,
-                complaintId: notif.data?.id,
-                complaintTitle: notif.data?.title,
-                receivedAt: new Date().toISOString(),
-                userId: user.id
-            });
+            // console.log('🔔 Processing notification', notif);
+            // console.log('📩 Received notification:', {
+            //     type: notif.type,
+            //     action: notif.action,
+            //     data: notif.data,
+            //     timestamp: notif.timestamp,
+            //     complaintId: notif.data?.id,
+            //     complaintTitle: notif.data?.title,
+            //     receivedAt: new Date().toISOString(),
+            //     userId: user.id
+            // });
 
-            console.log('📊 Current notifications count before adding:', notifications.length);
+            // console.log('📊 Current notifications count before adding:', notifications.length);
 
             setNotifications(prev => {
                 const updated = [notif, ...prev];
-                console.log('📊 Updated notifications count:', updated.length);
+                // console.log('📊 Updated notifications count:', updated.length);
                 return updated;
             });
 
-            const complaintId = notif.data?.id;
-            console.log('🔍 Processing notification type:', notif.type, { complaintId });
+            const complaintId = (notif.data as { id: string }).id;
+            // console.log('🔍 Processing notification type:', notif.type, { complaintId });
 
             switch (notif.type) {
                 case 'COMPLAINT_CREATED':
-                    console.log('🆕 Processing COMPLAINT_CREATED:', {
-                        complaintId,
-                        title: notif.data?.title,
-                        invalidatingQueries: ['dash.getComplainsEmp', 'managerDash.getTeamComplaints']
-                    });
-                    utils.dash.getComplainsEmp.invalidate();
-                    utils.managerDash.getTeamComplaints.invalidate();
+                    // console.log('🆕 Processing COMPLAINT_CREATED:', {
+                    //     complaintId,
+                    //     title: notif.data?.title,
+                    //     invalidatingQueries: ['dash.getComplainsEmp', 'managerDash.getTeamComplaints']
+                    // });
+                    addToast(`New complaint created: ${(notif.data as { title: string }).title}`, 'info', 'Complaint Created');
+                    playNotificationSound();
+                    await utils.dash.getComplainsEmp.invalidate();
+                    await utils.managerDash.getTeamComplaints.invalidate();
                     console.log('✅ COMPLAINT_CREATED invalidations completed');
                     break;
 
                 case 'COMPLAINT_ASSIGNED':
-                    console.log('📋 Processing COMPLAINT_ASSIGNED:', {
-                        complaintId,
-                        title: notif.data?.title,
-                        invalidatingQueries: ['workerDash.getWorkerTickets', 'dash.getComplainsEmp', 'managerDash.getTeamComplaints', 'complaints.getComplainInfo']
-                    });
-                    utils.workerDash.getWorkerTickets.invalidate();
-                    utils.dash.getComplainsEmp.invalidate();
-                    utils.managerDash.getTeamComplaints.invalidate();
+                    // console.log('📋 Processing COMPLAINT_ASSIGNED:', {
+                    //     complaintId,
+                    //     title: notif.data?.title,
+                    //     invalidatingQueries: ['workerDash.getWorkerTickets', 'dash.getComplainsEmp', 'managerDash.getTeamComplaints', 'complaints.getComplainInfo']
+                    // });
+                    addToast(`Complaint assigned: ${(notif.data as { title: string }).title}`, 'info', 'Complaint Assigned');
+                    await utils.workerDash.getWorkerTickets.invalidate();
+                    await utils.dash.getComplainsEmp.invalidate();
+                    await utils.managerDash.getTeamComplaints.invalidate();
                     if (complaintId) {
-                        utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+                        await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
                         console.log('✅ COMPLAINT_ASSIGNED invalidations completed including specific complaint:', complaintId);
                     } else {
                         console.log('✅ COMPLAINT_ASSIGNED invalidations completed (no specific complaint ID)');
@@ -281,15 +285,16 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     break;
 
                 case 'COMPLAINT_RESOLVED':
-                    console.log('✅ Processing COMPLAINT_RESOLVED:', {
-                        complaintId,
-                        title: notif.data?.title,
-                        invalidatingQueries: ['workerDash.getWorkerTickets', 'managerDash.getTeamComplaints', 'complaints.getComplainInfo']
-                    });
-                    utils.workerDash.getWorkerTickets.invalidate();
-                    utils.managerDash.getTeamComplaints.invalidate();
+                    // console.log('✅ Processing COMPLAINT_RESOLVED:', {
+                    //     complaintId,
+                    //     title: notif.data?.title,
+                    //     invalidatingQueries: ['workerDash.getWorkerTickets', 'managerDash.getTeamComplaints', 'complaints.getComplainInfo']
+                    // });
+                    addToast(`Complaint resolved: ${(notif.data as { title: string }).title}`, 'info', 'Complaint Resolved');
+                    await utils.workerDash.getWorkerTickets.invalidate();
+                    await utils.managerDash.getTeamComplaints.invalidate();
                     if (complaintId) {
-                        utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+                        await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
                         console.log('✅ COMPLAINT_RESOLVED invalidations completed including specific complaint:', complaintId);
                     } else {
                         console.log('✅ COMPLAINT_RESOLVED invalidations completed (no specific complaint ID)');
@@ -297,15 +302,16 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     break;
 
                 case 'COMPLAINT_CLOSED':
-                    console.log('🔒 Processing COMPLAINT_CLOSED:', {
-                        complaintId,
-                        title: notif.data?.title,
-                        invalidatingQueries: ['managerDash.getTeamComplaints', 'workerDash.getWorkerTickets', 'complaints.getComplainInfo']
-                    });
-                    utils.managerDash.getTeamComplaints.invalidate();
-                    utils.workerDash.getWorkerTickets.invalidate();
+                    // console.log('🔒 Processing COMPLAINT_CLOSED:', {
+                    //     complaintId,
+                    //     title: notif.data?.title,
+                    //     invalidatingQueries: ['managerDash.getTeamComplaints', 'workerDash.getWorkerTickets', 'complaints.getComplainInfo']
+                    // });
+                    addToast(`Complaint closed: ${(notif.data as { title: string }).title}`, 'info', 'Complaint Closed');
+                    await utils.managerDash.getTeamComplaints.invalidate();
+                    await utils.workerDash.getWorkerTickets.invalidate();
                     if (complaintId) {
-                        utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+                        await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
                         console.log('✅ COMPLAINT_CLOSED invalidations completed including specific complaint:', complaintId);
                     } else {
                         console.log('✅ COMPLAINT_CLOSED invalidations completed (no specific complaint ID)');
@@ -313,15 +319,16 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     break;
 
                 case 'COMPLAINT_REOPENED':
-                    console.log('🔄 Processing COMPLAINT_REOPENED:', {
-                        complaintId,
-                        title: notif.data?.title,
-                        invalidatingQueries: ['dash.getComplainsEmp', 'managerDash.getTeamComplaints', 'complaints.getComplainInfo']
-                    });
-                    utils.dash.getComplainsEmp.invalidate();
-                    utils.managerDash.getTeamComplaints.invalidate();
+                    // console.log('🔄 Processing COMPLAINT_REOPENED:', {
+                    //     complaintId,
+                    //     title: notif.data?.title,
+                    //     invalidatingQueries: ['dash.getComplainsEmp', 'managerDash.getTeamComplaints', 'complaints.getComplainInfo']
+                    // });
+                    addToast(`Complaint reopened: ${(notif.data as { title: string }).title}`, 'info', 'Complaint Reopened');
+                    await utils.dash.getComplainsEmp.invalidate();
+                    await utils.managerDash.getTeamComplaints.invalidate();
                     if (complaintId) {
-                        utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+                        await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
                         console.log('✅ COMPLAINT_REOPENED invalidations completed including specific complaint:', complaintId);
                     } else {
                         console.log('✅ COMPLAINT_REOPENED invalidations completed (no specific complaint ID)');
@@ -329,13 +336,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     break;
 
                 case 'COMMENT_ADDED':
-                    console.log('💬 Processing COMMENT_ADDED:', {
-                        complaintId,
-                        commentData: notif.data,
-                        invalidatingQueries: ['complaints.getComplainInfo']
-                    });
+                    // console.log('💬 Processing COMMENT_ADDED:', {
+                    //     complaintId,
+                    //     commentData: notif.data,
+                    //     invalidatingQueries: ['complaints.getComplainInfo']
+                    // });
+                    addToast(`New comment added to complaint: ${(notif.data as { comment: string }).comment}`, 'info', 'Comment Added');
                     if (complaintId) {
-                        utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+                        await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
                         console.log('✅ COMMENT_ADDED invalidations completed for complaint:', complaintId);
                     } else {
                         console.log('⚠️ COMMENT_ADDED: No complaint ID provided');
@@ -343,52 +351,71 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     break;
 
                 case 'FEEDBACK_SUBMITTED':
-                    console.log('⭐ Processing FEEDBACK_SUBMITTED:', {
-                        complaintId,
-                        feedbackData: notif.data,
-                        invalidatingQueries: ['complaints.getComplainInfo']
-                    });
+                    // console.log('⭐ Processing FEEDBACK_SUBMITTED:', {
+                    //     complaintId,
+                    //     feedbackData: notif.data,
+                    //     invalidatingQueries: ['complaints.getComplainInfo']
+                    // });
+                    addToast(`Feedback submitted for complaint: ${(notif.data as { feedback: string }).feedback}`, 'info', 'Feedback Submitted');
                     if (complaintId) {
-                        utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+                        await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
                         console.log('✅ FEEDBACK_SUBMITTED invalidations completed for complaint:', complaintId);
                     } else {
                         console.log('⚠️ FEEDBACK_SUBMITTED: No complaint ID provided');
                     }
                     break;
 
+                case 'COMPLAINT_STATUS_CHANGED':
+                    // console.log('🔄 Processing COMPLAINT_STATUS_CHANGED:', {
+                    //     complaintId,
+                    //     statusData: notif.data,
+                    //     invalidatingQueries: ['complaints.getComplainInfo']
+                    // });
+                    await utils.managerDash.getTeamComplaints.invalidate();
+                    await utils.workerDash.getWorkerTickets.invalidate();
+                    await utils.dash.getComplainsEmp.invalidate();
+                    addToast(`Complaint status changed: ${(notif.data as { status: string }).status}`, 'info', 'Complaint Status Changed');
+                    if (complaintId) {
+                        await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+                        console.log('✅ COMPLAINT_STATUS_CHANGED invalidations completed for complaint:', complaintId);
+                    } else {
+                        console.log('⚠️ COMPLAINT_STATUS_CHANGED: No complaint ID provided');
+                    }
+                    break;
+
                 default:
-                    console.warn('⚠️ Unhandled notification type:', {
-                        type: notif.type,
-                        action: notif.action,
-                        data: notif.data,
-                        timestamp: notif.timestamp,
-                        availableTypes: ['COMPLAINT_CREATED', 'COMPLAINT_ASSIGNED', 'COMPLAINT_RESOLVED', 'COMPLAINT_CLOSED', 'COMPLAINT_REOPENED', 'COMMENT_ADDED', 'FEEDBACK_SUBMITTED']
-                    });
+                // console.warn('⚠️ Unhandled notification type:', {
+                //     type: notif.type,
+                //     action: notif.action,
+                //     data: notif.data,
+                //     timestamp: notif.timestamp,
+                //     availableTypes: ['COMPLAINT_CREATED', 'COMPLAINT_ASSIGNED', 'COMPLAINT_RESOLVED', 'COMPLAINT_CLOSED', 'COMPLAINT_REOPENED', 'COMMENT_ADDED', 'FEEDBACK_SUBMITTED']
+                // });
             }
 
-            console.log('🏁 Notification processing completed for type:', notif.type);
+            // console.log('🏁 Notification processing completed for type:', notif.type);
         });
 
         return () => {
-            console.log('🧹 Cleaning up socket connection', {
-                socketId: s.id,
-                userId: user.id,
-                timestamp: new Date().toISOString()
-            });
+            // console.log('🧹 Cleaning up socket connection', {
+            //     socketId: s.id,
+            //     userId: user.id,
+            //     timestamp: new Date().toISOString()
+            // });
             setConnectionStatus('disconnected');
             s.disconnect();
             console.log('🔌 Socket disconnected in cleanup');
         };
     }, [isSignedIn, user, utils]);
 
-    console.log('🔄 NotificationProvider render', {
-        socketConnected: socket?.connected,
-        socketId: socket?.id,
-        notificationsCount: notifications.length,
-        userId: user?.id,
-        isSignedIn,
-        connectionStatus
-    });
+    // console.log('🔄 NotificationProvider render', {
+    //     socketConnected: socket?.connected,
+    //     socketId: socket?.id,
+    //     notificationsCount: notifications.length,
+    //     userId: user?.id,
+    //     isSignedIn,
+    //     connectionStatus
+    // });
 
     return (
         <SocketContext.Provider value={{ socket, notifications }}>

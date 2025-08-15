@@ -39,7 +39,7 @@ const ComplaintCard = ({ ticket }: TicketProps) => {
     onSuccess: () => {
       console.log('Ticket activated successfully');
       // Optionally refresh the page or show a toast
-      window.location.reload();
+      // window.location.reload();
     },
     onError: (error) => {
       console.error('Error activating ticket:', error);

@@ -35,8 +35,9 @@ export default function RootLayout({
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           <TRPCReactProvider>
             {/* ✅ SocketProvider here so Navbar, Sidebar, pages all get real-time updates */}
+            <ToastProvider>
             <SocketProvider>
-              <ToastProvider>
+              
                 <div className="flex min-h-screen flex-col">
                   <Navbar />
                   <div className="flex min-h-screen">
@@ -47,8 +48,9 @@ export default function RootLayout({
                   </div>
                 </div>
                 <Footer />
-              </ToastProvider>
+              
             </SocketProvider>
+            </ToastProvider>
           </TRPCReactProvider>
         </body>
       </html>
