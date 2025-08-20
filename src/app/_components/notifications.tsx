@@ -162,7 +162,7 @@ const NotificationsComponent = () => {
   const markAsRead = (id: number) => {
     setNotifications((prev) =>
       prev.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
+        notif.id === id ? { ...notif, isRead: true } : notif
       )
     );
     markNotificationAsRead({ id });
@@ -171,7 +171,7 @@ const NotificationsComponent = () => {
 
   const markAllAsRead = () => {
     setNotifications((prev) =>
-      prev.map((notif) => ({ ...notif, read: true }))
+      prev.map((notif) => ({ ...notif, isRead: true }))
     );
     markAllNotificationsAsRead();
     setTotalUnread(0);
@@ -204,9 +204,9 @@ const NotificationsComponent = () => {
 
       {isNotificationOpen && (
         <>
-          {/* Mobile: Full screen overlay - Only show on mobile */}
+          {/* Mobile: Full screen overlay with solid background */}
           <div 
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 sm:hidden" 
+            className="fixed inset-0 bg-gray-800 z-40 sm:hidden" 
             onClick={() => setIsNotificationOpen(false)}
           />
           
@@ -214,7 +214,6 @@ const NotificationsComponent = () => {
           <div 
             ref={panelRef}
             className={`
-              /* Mobile: Full width bottom sheet */
               fixed sm:absolute
               bottom-0 sm:top-full sm:mt-2
               left-0 sm:left-auto sm:right-0
@@ -223,14 +222,13 @@ const NotificationsComponent = () => {
               bg-white 
               rounded-t-2xl sm:rounded-lg 
               shadow-2xl sm:shadow-xl 
-              border-t sm:border border-gray-200
+              border-t-2 sm:border-2 border-gray-200
               transform transition-transform duration-300 ease-out
               ${isDragging ? '' : 'transition-transform'}
             `}
             style={{ 
               zIndex: 9999,
               backgroundColor: '#ffffff',
-              border: '2px solid #e5e7eb',
               touchAction: window.innerWidth < 640 ? 'pan-y' : 'auto'
             }}
             onTouchStart={handleTouchStart}
@@ -240,19 +238,19 @@ const NotificationsComponent = () => {
             
             {/* Mobile Handle - Only show on mobile */}
             <div 
-              className="block sm:hidden w-12 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-2 cursor-grab active:cursor-grabbing"
+              className="block sm:hidden w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-2 cursor-grab active:cursor-grabbing"
               style={{
-                backgroundColor: isDragging ? '#6b7280' : '#d1d5db',
+                backgroundColor: isDragging ? '#6b7280' : '#9ca3af',
                 transition: isDragging ? 'none' : 'background-color 0.2s'
               }}
             />
             
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-white rounded-t-2xl sm:rounded-t-lg">
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white rounded-t-2xl sm:rounded-t-lg">
               <div className="flex items-center gap-3">
                 <h3 className="text-lg sm:text-base font-semibold text-gray-900">Notifications</h3>
                 {totalUnread > 0 && (
-                  <span className="bg-red-100 text-red-600 text-xs font-medium px-2 py-1 rounded-full">
+                  <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full">
                     {totalUnread} new
                   </span>
                 )}
@@ -281,27 +279,27 @@ const NotificationsComponent = () => {
 
             {/* List */}
             <div 
-              className="overflow-y-auto" 
+              className="overflow-y-auto bg-white" 
               style={{ 
                 maxHeight: window.innerWidth < 640 ? 'calc(85vh - 120px)' : '300px',
               }}
             >
               {notifications.length === 0 ? (
-                <div className="px-4 py-12 sm:py-8 text-center text-gray-500">
+                <div className="px-4 py-12 sm:py-8 text-center text-gray-500 bg-white">
                   <Bell className="w-12 h-12 sm:w-8 sm:h-8 text-gray-300 mx-auto mb-3 sm:mb-2" />
                   <p className="text-base sm:text-sm font-medium mb-1">No notifications</p>
                   <p className="text-sm sm:text-xs text-gray-400">You&apos;re all caught up!</p>
                   <p className="text-xs text-gray-400 mt-2 sm:hidden">Swipe down to close</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-200 bg-white">
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`px-4 py-4 sm:py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-150 border-l-4 ${
+                      className={`px-4 py-4 sm:py-3 hover:bg-gray-50 transition-colors duration-150 border-l-4 ${
                         !notification.isRead 
-                          ? 'bg-blue-50/30 border-l-blue-500' 
-                          : 'border-l-transparent'
+                          ? 'bg-blue-50 border-l-blue-500' 
+                          : 'bg-white border-l-gray-200'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -321,7 +319,7 @@ const NotificationsComponent = () => {
                               <p className="text-sm text-gray-600 mt-1 leading-5">
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-400 mt-2 sm:mt-1">
+                              <p className="text-xs text-gray-500 mt-2 sm:mt-1">
                                 {formatDistanceToNow(new Date(notification.createdAt), {
                                   addSuffix: true,
                                 })}
@@ -330,10 +328,10 @@ const NotificationsComponent = () => {
                             
                             {/* Action Buttons */}
                             <div className="flex items-center gap-1 flex-shrink-0">
-                              {notification.status !== 'read' && (
+                              {!notification.isRead && (
                                 <button
                                   onClick={() => markAsRead(notification.id)}
-                                  className="p-2 sm:p-1 hover:bg-gray-200 rounded-lg sm:rounded text-gray-400 hover:text-green-600 transition-colors"
+                                  className="p-2 sm:p-1 hover:bg-gray-200 rounded-lg sm:rounded text-gray-500 hover:text-green-600 transition-colors"
                                   title="Mark as read"
                                 >
                                   <Check className="w-4 h-4 sm:w-3 sm:h-3" />
@@ -342,7 +340,7 @@ const NotificationsComponent = () => {
 
                               <button
                                 onClick={() => deleteNotification(notification.id)}
-                                className="p-2 sm:p-1 hover:bg-gray-200 rounded-lg sm:rounded text-gray-400 hover:text-red-600 transition-colors"
+                                className="p-2 sm:p-1 hover:bg-gray-200 rounded-lg sm:rounded text-gray-500 hover:text-red-600 transition-colors"
                                 title="Delete"
                               >
                                 <X className="w-4 h-4 sm:w-3 sm:h-3" />
@@ -359,7 +357,7 @@ const NotificationsComponent = () => {
 
             {/* Footer */}
             {notifications.length > 0 && (
-              <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+              <div className="px-4 py-3 bg-gray-100 border-t border-gray-200 rounded-b-2xl sm:rounded-b-lg">
                 {hasMore ? (
                   <button
                     onClick={() => setNotificationOffset((prev) => prev + 10)}
@@ -370,7 +368,7 @@ const NotificationsComponent = () => {
                   </button>
                 ) : (
                   <div className="text-center py-2 sm:py-1">
-                    <p className="text-sm text-gray-400">No more notifications</p>
+                    <p className="text-sm text-gray-500">No more notifications</p>
                     <p className="text-xs text-gray-400 mt-1 sm:hidden">Swipe down to close</p>
                   </div>
                 )}
