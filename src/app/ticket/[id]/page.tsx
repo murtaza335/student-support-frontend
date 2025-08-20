@@ -27,6 +27,7 @@ import FeedbackPopup from '~/app/ticket/feedbackPopup';
 export default function TicketDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const utils = api.useUtils();
   const { isSignedIn, user, isLoaded } = useUser();
   const { addToast } = useToast();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -80,16 +81,17 @@ export default function TicketDetailPage() {
     error: deleteError,
   } = api.complaints.deleteComplaint.useMutation();
   const MyTeamId: number | null = user?.publicMetadata?.teamId as number | null;
+  console.log("My team id: ", MyTeamId);
   // const MyTeamName: string | null = user?.publicMetadata?.teamName as string | null;
 
-  // api call to add a worker to the existing assignment of ticket
-  const {
-    mutate: _addWorkerToAssignment,
-    isPending: isAddingWorker,
-    isSuccess: isAddWorkerSuccess,
-    isError: isAddWorkerError,
-    error: addWorkerError,
-  } = api.complaints.addWorkerToAssignment.useMutation();
+  // // api call to add a worker to the existing assignment of ticket
+  // const {
+  //   mutate: addWorkerToAssignment,
+  //   isPending: isAddingWorker,
+  //   isSuccess: isAddWorkerSuccess,
+  //   isError: isAddWorkerError,
+  //   error: addWorkerError,
+  // } = api.complaints.addWorkerToAssignment.useMutation();
 
   // api call to submit feedback
   const {
@@ -98,7 +100,17 @@ export default function TicketDetailPage() {
     isSuccess: isFeedbackSuccess,
     isError: isFeedbackError,
     error: feedbackError,
-  } = api.complaints.giveFeedback.useMutation();
+  } = api.complaints.giveFeedback.useMutation({
+    onSuccess: () => {
+      addToast('Thank you for your feedback! Ticket will be closed automatically.', 'success');
+      // Automatically close the ticket after feedback is submitted
+      closeTicket({ complaintId: id });
+    },
+    onError: (error) => {
+      console.error('Error submitting feedback:', error);
+      addToast('Failed to submit feedback. Please try again.', 'error');
+    },
+  });
 
   // api call to close ticket
   const {
@@ -107,7 +119,16 @@ export default function TicketDetailPage() {
     isSuccess: isCloseSuccess,
     isError: isCloseError,
     error: closeError,
-  } = api.complaints.closeTicket.useMutation();
+  } = api.complaints.closeTicket.useMutation({
+    onSuccess: async () => {
+      addToast('Ticket has been closed successfully!', 'success');
+      await utils.complaints.getComplainInfo.invalidate({ id: String(ticketId) });
+    },
+    onError: (error) => {
+      console.error('Error closing ticket:', error);
+      addToast('Failed to close ticket. Please try again.', 'error');
+    },
+  });
 
   // api call to reopen ticket
   const {
@@ -116,7 +137,17 @@ export default function TicketDetailPage() {
     isSuccess: isReopenSuccess,
     isError: isReopenError,
     error: reopenError,
-  } = api.complaints.reopenTicket.useMutation();
+  } = api.complaints.reopenTicket.useMutation({
+    onSuccess: async () => {
+      addToast('Ticket has been reopened successfully!', 'success');
+      setIsFeedbackPopupOpen(false);
+      await utils.complaints.getComplainInfo.invalidate({ id: String(ticketId) });
+    },
+    onError: (error) => {
+      console.error('Error reopening ticket:', error);
+      addToast('Failed to reopen ticket. Please try again.', 'error');
+    },
+  });
 
 
 
@@ -140,32 +171,18 @@ export default function TicketDetailPage() {
     }
   }, [isDeleteSuccess, isDeleteError, deleteError, user, router, addToast]);
 
-  useEffect(() => {
-    if (isAddWorkerSuccess) {
-      addToast('Worker assignment updated successfully!', 'success');
-      router.refresh();
-      setIsEditAssignmentPopupOpen(false);
-    }
+  // useEffect(() => {
+  //   if (isAddWorkerSuccess) {
+  //     addToast('Worker assignment updated successfully!', 'success');
+  //     router.refresh();
+  //     setIsEditAssignmentPopupOpen(false);
+  //   }
 
-    if (isAddWorkerError) {
-      console.error('Error updating assignment:', addWorkerError);
-      addToast('Failed to update assignment. Please try again.', 'error');
-    }
-  }, [isAddWorkerSuccess, isAddWorkerError, addWorkerError, router, addToast]);
-
-  // Handle feedback submission success/error
-  useEffect(() => {
-    if (isFeedbackSuccess) {
-      addToast('Thank you for your feedback!', 'success');
-      // Automatically close the ticket after feedback is submitted
-      closeTicket({ complaintId: id });
-    }
-
-    if (isFeedbackError) {
-      console.error('Error submitting feedback:', feedbackError);
-      addToast('Failed to submit feedback. Please try again.', 'error');
-    }
-  }, [isFeedbackSuccess, isFeedbackError, feedbackError, addToast, closeTicket, id]);
+  //   if (isAddWorkerError) {
+  //     console.error('Error updating assignment:', addWorkerError);
+  //     addToast('Failed to update assignment. Please try again.', 'error');
+  //   }
+  // }, [isAddWorkerSuccess, isAddWorkerError, addWorkerError, router, addToast]);
 
   // Handle close ticket success/error
   useEffect(() => {
@@ -180,20 +197,6 @@ export default function TicketDetailPage() {
       addToast('Failed to close ticket. Please try again.', 'error');
     }
   }, [isCloseSuccess, isCloseError, closeError, addToast, router, setIsFeedbackPopupOpen]);
-
-  // Handle reopen ticket success/error
-  useEffect(() => {
-    if (isReopenSuccess) {
-      addToast('Ticket has been reopened successfully!', 'success');
-      setIsFeedbackPopupOpen(false);
-      router.refresh();
-    }
-
-    if (isReopenError) {
-      console.error('Error reopening ticket:', reopenError);
-      addToast('Failed to reopen ticket. Please try again.', 'error');
-    }
-  }, [isReopenSuccess, isReopenError, reopenError, addToast, router, setIsFeedbackPopupOpen]);
 
 
   if (isLoading || !isLoaded) {
@@ -289,7 +292,7 @@ export default function TicketDetailPage() {
             {/* Desktop Actions */}
             <div className="hidden lg:flex items-center space-x-3">
               {/* Mark Complete Button - Show when currentWorkerStatus is not "resolved" */}
-              {currentWorkerStatus !== "resolved" && user?.publicMetadata?.role === 'worker' && (
+              {currentWorkerStatus !== "resolved" && currentWorkerStatus !== "in_queue" && user?.publicMetadata?.role === 'worker' && (
                 <button 
                   className="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                   onClick={() => setShowCloseModal(true)}
@@ -319,13 +322,9 @@ export default function TicketDetailPage() {
                 <button
                   className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => { setIsEditAssignmentPopupOpen(true); console.log('Opening edit assignment...'); }}
-                  disabled={isAddingWorker}
+                  // disabled={isAddingWorker}
                 >
-                  {isAddingWorker ? (
-                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
                     <Edit3 className="h-4 w-4 mr-2" />
-                  )}
                   Edit Assignment
                 </button>
               )}
@@ -367,7 +366,7 @@ export default function TicketDetailPage() {
         <div className="lg:hidden px-4 py-3 bg-gray-50 border-t border-gray-200 w-full">
           <div className="flex space-x-2 max-w-full overflow-x-auto">
             {/* Mark Complete Button for Workers - Show when currentWorkerStatus is "in_queue" */}
-            {currentWorkerStatus === "in_queue" && user?.publicMetadata?.role === 'worker' && (
+            {/* {currentWorkerStatus === "in_queue" && user?.publicMetadata?.role === 'worker' && (
               <button 
                 className="flex-shrink-0 inline-flex items-center justify-center px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors touch-manipulation"
                 onClick={() => setShowCloseModal(true)}
@@ -375,10 +374,10 @@ export default function TicketDetailPage() {
                 <Clock className="h-4 w-4 mr-2" />
                 Mark Complete
               </button>
-            )}
+            )} */}
 
             {/* Mark Complete Button for Workers */}
-            {user?.publicMetadata?.role === 'worker' && complaint?.status !== 'closed' && complaint?.status !== 'resolved' && currentWorkerStatus !== "in_queue" && (
+            {user?.publicMetadata?.role === 'worker' && complaint?.status !== 'resolved' && currentWorkerStatus !== "in_queue" && (
               <button 
                 className="flex-shrink-0 inline-flex items-center justify-center px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors touch-manipulation"
                 onClick={() => setShowCloseModal(true)}
@@ -404,13 +403,13 @@ export default function TicketDetailPage() {
               <button 
                 className="flex-shrink-0 inline-flex items-center justify-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => { setIsEditAssignmentPopupOpen(true); console.log('Opening edit assignment...'); }}
-                disabled={isAddingWorker}
+                // disabled={isAddingWorker}
               >
-                {isAddingWorker ? (
-                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
+                {/* {isAddingWorker ? ( */}
+                  {/* <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : ( */}
                   <Edit3 className="h-4 w-4 mr-2" />
-                )}
+                {/* )} */}
                 Edit Assignment
               </button>
             )}

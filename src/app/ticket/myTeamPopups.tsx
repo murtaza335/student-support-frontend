@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { AddWorkersSection } from './editAssignmentPopupCompos';
 import { ReplaceAssignmentSection } from './editAssignmentPopupCompos';
 import { FooterSection } from './editAssignmentPopupCompos';
+import { useToast } from '../_components/ToastProvider';
 
 
 interface EditAssignmentPopupProps {
@@ -21,6 +22,7 @@ interface EditAssignmentPopupProps {
 
 export default function EditAssignmentPopup({ open, setOpen, complaintId, assignedWorkers, mode = "edit" }: EditAssignmentPopupProps) {
   const router = useRouter();
+  const {addToast} = useToast();
   const utils = api.useUtils();
   // State for selected workers to assign
   const [selectedWorkers, setSelectedWorkers] = useState<WorkerAssignment[]>([]);
@@ -38,6 +40,11 @@ export default function EditAssignmentPopup({ open, setOpen, complaintId, assign
   
   // API mutation calls
   const assignTicketToWorkers = api.complaints.assignComplainToWorkers.useMutation();
+  // call to add worker to assignment
+    // api call to add a worker to the existing assignment of ticket
+  const addWorkerToAssignment = api.complaints.addWorkerToAssignment.useMutation();
+  
+  // replace assignment
   const replaceAssignment = api.complaints.replaceAssignment.useMutation();
   
   const [workers, setWorkers] = useState<WorkerAssignment[]>([]);
@@ -112,8 +119,36 @@ export default function EditAssignmentPopup({ open, setOpen, complaintId, assign
       setSelectedWorkers([]); // Clear selections
     } catch (error) {
       console.error('Error assigning workers:', error);
-      
-      // Optionally show toast/notification
+      addToast("Failed to assign workers. Please try again.")
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  // handle add workers
+  const handleAddWorkers = async () => {
+    if (selectedWorkers.length === 0) return;
+
+    try {
+      setIsAssigning(true);
+
+      // Create array of assignments
+      const assignments = selectedWorkers.map(worker => worker.workerId);
+
+      const response = await addWorkerToAssignment.mutateAsync({
+        workerId: assignments,
+        complaintId: complaintId
+      });
+
+      console.log('Workers added successfully:', response);
+      await utils.complaints.getComplainInfo.invalidate({ id: String(complaintId) }); // Invalidate cache to refresh data
+      await utils.complaints.getComplaintLogs.invalidate({ complaintId: String(complaintId) }); // Invalidate logs cache
+      await utils.teams.getWorkersWhileAssignment.invalidate({ complaintId : complaintId }); // Invalidate workers cache
+      setOpen(false); // Close popup
+      setSelectedWorkers([]); // Clear selections
+    } catch (error) {
+      console.error('Error assigning workers:', error);
+      addToast("Failed to assign workers. Please try again.")
     } finally {
       setIsAssigning(false);
     }
@@ -299,6 +334,7 @@ export default function EditAssignmentPopup({ open, setOpen, complaintId, assign
               isWorkerAssigned={isWorkerAssigned}
               assignedCount={assignedCount}
               handleAssignWorkers={handleAssignWorkers}
+              handleAddWorkers={handleAddWorkers}
               handleReplaceAssignment={handleReplaceAssignment}
               setOpen={setOpen}
               mode={mode}

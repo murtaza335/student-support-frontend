@@ -50,8 +50,45 @@ export default function CustomAuthForm() {
     setShowConfirmPassword(false);
   };
 
+  // Domain verification function
+  const verifyDomain = (email: string): boolean => {
+    if (!email?.includes('@')) {
+      return false;
+    }
+    const domain = email.split('@')[1]?.toLowerCase();
+    return domain === 'nust.edu.pk';
+  };
+
+  // Validate fields function
+  const validateFields = (email: string, password: string, confirmPassword?: string): string | null => {
+    if (!email.trim()) {
+      return 'Email is required';
+    }
+    if (!password.trim()) {
+      return 'Password is required';
+    }
+    if (confirmPassword !== undefined && !confirmPassword.trim()) {
+      return 'Confirm password is required';
+    }
+    if (confirmPassword !== undefined && password !== confirmPassword) {
+      return 'Passwords do not match';
+    }
+    // if (!verifyDomain(email)) {
+    //   return 'Please use your NUST email address (example@nust.edu.pk)';
+    // }
+    return null;
+  };
+
   const handleSignIn = async () => {
     if (!signInLoaded || isLoading) return;
+    
+    // Validate fields and domain
+    const validationError = validateFields(email, password);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     try {
@@ -73,10 +110,14 @@ export default function CustomAuthForm() {
 
   const handleSignUp = async () => {
     if (!signUpLoaded || isLoading) return;
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    
+    // Validate fields and domain
+    const validationError = validateFields(email, password, confirmPassword);
+    if (validationError) {
+      setError(validationError);
       return;
     }
+
     setIsLoading(true);
     setError('');
     try {
@@ -520,7 +561,7 @@ export default function CustomAuthForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+    <div className="w-90 mx-auto p-4 py-8 bg-white rounded-xl shadow-lg border border-gray-200 mt-0">
       <h2 className="text-2xl font-bold mb-4 text-center capitalize text-gray-800">
         {mode.replace('-', ' ')}
       </h2>

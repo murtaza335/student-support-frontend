@@ -103,7 +103,7 @@ export function AddWorkersSection({
               <Users className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
             </div>
             <p className="text-slate-500 font-medium text-sm sm:text-base">No team members available</p>
-            <p className="text-slate-400 text-xs sm:text-sm mt-1">Add team members to get started</p>
+            {/* <p className="text-slate-400 text-xs sm:text-sm mt-1">Add team members to get started</p> */}
           </div>
         ) : (
           <div className="space-y-2 sm:space-y-3 max-h-64 sm:max-h-[40vh] lg:max-h-[50vh] overflow-y-auto custom-scrollbar pr-2 pb-4">
@@ -529,6 +529,7 @@ export function FooterSection({
   assignedCount,
   handleAssignWorkers,
   handleReplaceAssignment,
+  handleAddWorkers,
   setOpen,
   mode
 }: {
@@ -542,6 +543,7 @@ export function FooterSection({
   assignedCount: number;
   handleAssignWorkers: () => void;
   handleReplaceAssignment: () => void;
+  handleAddWorkers: () => void;
   setOpen: (open: boolean) => void;
   mode: string;
 }) {
@@ -609,7 +611,7 @@ export function FooterSection({
         
         {((!showReplaceSection || mode === "initial-assignment") && selectedWorkers.length > 0) && (
           <button
-            onClick={handleAssignWorkers}
+            onClick={ (mode === 'Assign' ? handleAssignWorkers : handleAddWorkers)}
             disabled={isAssigning}
             className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-manipulation ${
               isAssigning

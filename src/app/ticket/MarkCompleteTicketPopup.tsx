@@ -199,7 +199,7 @@ export default function MarkCompleteTicketPopup({ open, setOpen, ticketId }: Clo
     <div className="fixed inset-0 z-50">
       {/* Loading Overlay */}
       {isSubmitting && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-60">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-sm sm:max-w-md w-full mx-4 text-center">
             <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-green-600 border-t-transparent mx-auto mb-4"></div>
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">

@@ -10,6 +10,7 @@ import { priorityColorMap } from '~/lib/PriorityColorMap';
 import { complaintStatusColorMap } from '~/lib/statusColorMap';
 import { useUser } from '@clerk/nextjs';
 import { api } from '~/trpc/react';
+import { useToast } from '../ToastProvider';
 
 interface TicketProps {
   ticket?: ticket;
@@ -18,6 +19,7 @@ interface TicketProps {
 const ComplaintCard = ({ ticket }: TicketProps) => {
   const { user } = useUser();
   const role = user?.publicMetadata?.role ?? 'guest';
+  const { addToast } = useToast();
   const router = useRouter();
   const utils = api.useUtils();
   // const [isMobile, setIsMobile] = useState(false);
@@ -40,10 +42,12 @@ const ComplaintCard = ({ ticket }: TicketProps) => {
     onSuccess: async () => {
       console.log('Ticket activated successfully');
       await utils.workerDash.getWorkerTickets.invalidate();
+      await utils.complaints.getComplainInfo.invalidate({ id: String(ticket?.id) }); // Invalidate cache to refresh data
     },
     onError: (error) => {
       console.error('Error activating ticket:', error);
       // Optionally show error toast
+      addToast('Failed to activate ticket. Please try again.', 'error');
     },
   });
 

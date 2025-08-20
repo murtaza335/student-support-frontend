@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Dialog } from '@headlessui/react';
+import { useRouter } from 'next/navigation';
 import { api } from '~/trpc/react';
 import { Users, X, ShieldCheck, MessageSquare } from 'lucide-react';
 import type { Team } from '~/types/teams/team';
@@ -17,6 +18,8 @@ interface ForwardTeamPopupProps {
 export default function ForwardTeamPopup({ open, setOpen, complainId, MyTeamId }: ForwardTeamPopupProps) {
 
   const {addToast: _addToast} = useToast();
+  const utils = api.useUtils();
+  const router = useRouter();
 
   // fetching the teams api
   const { data: getTeamsResponse, refetch: _refetchTeams, isLoading: teamsLoading, isError: getTeamsError } = api.teams.getTeams.useQuery(undefined, {
@@ -26,10 +29,27 @@ export default function ForwardTeamPopup({ open, setOpen, complainId, MyTeamId }
 
   // api that triggers when forward complaint button is clicked
   const forwardComplaint = api.complaints.forwardComplainToTeam.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       // Show success toast
       console.log('Complaint forwarded successfully');
+      _addToast('Complaint forwarded successfully!', 'success');
+      // Close the popup
+      
+      
+      // Invalidate queries to refresh data
+      
+      await utils.managerDash.getTeamComplaints.invalidate();
       setOpen(false);
+      // Reset form state
+      setSelectedTeam(null);
+      setMessage('');
+      // Redirect to manager dashboard
+      router.push('/dashboard/manager');
+      await utils.complaints.getComplainInfo.invalidate({ id: complainId });
+    },
+    onError: (error) => {
+      console.error('Error forwarding complaint:', error);
+      _addToast('Failed to forward complaint. Please try again.', 'error');
     },
   });
 
@@ -45,22 +65,36 @@ export default function ForwardTeamPopup({ open, setOpen, complainId, MyTeamId }
   }, [open]);
 
   const handleForward = () => {
-    if (selectedTeam && message.trim()) {
+    if (selectedTeam && message.trim() && !forwardComplaint.isPending) {
       forwardComplaint.mutate({
         teamId: selectedTeam.id,
         comment: message.trim(),
         complaintId: complainId,
       });
-      setOpen(false);
     }
   };
 
   return (
-    <Dialog open={open} onClose={() => setOpen(false)} className="relative z-50">
+    <Dialog open={open} onClose={() => !forwardComplaint.isPending && setOpen(false)} className="relative z-50">
       <div className="fixed inset-0 bg-gradient-to-br from-slate-900/20 via-slate-800/30 to-slate-900/40 backdrop-blur-sm transition-all duration-300" aria-hidden="true" />
 
+      {/* Loading Overlay */}
+      {forwardComplaint.isPending && (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-60">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Forwarding Complaint...
+            </h3>
+            <p className="text-sm text-gray-600">
+              Please wait while we forward your complaint to the selected team.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200/60 transform transition-all duration-300">
+        <Dialog.Panel className={`w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200/60 transform transition-all duration-300 ${forwardComplaint.isPending ? 'opacity-75 pointer-events-none' : ''}`}>
           <div className="relative px-6 py-5 bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200/60 rounded-t-2xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -76,7 +110,8 @@ export default function ForwardTeamPopup({ open, setOpen, complainId, MyTeamId }
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="p-2 hover:bg-white/80 rounded-xl transition-all duration-200 hover:scale-105 group"
+                disabled={forwardComplaint.isPending}
+                className="p-2 hover:bg-white/80 rounded-xl transition-all duration-200 hover:scale-105 group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
               </button>
@@ -113,15 +148,15 @@ export default function ForwardTeamPopup({ open, setOpen, complainId, MyTeamId }
                 <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar mb-6">
                   {/* Only show teams not equal to the user's team id */}
                   {(teams as Team[])
-                    .filter((team: Team) => team.id !== MyTeamId)
+                    .filter((team: Team) => Number(team.id) !== Number(MyTeamId))
                     .map((team: Team, index: number) => (
                       <div
                         key={team.id}
-                        onClick={() => setSelectedTeam(selectedTeam?.id === team.id ? null : team)}
+                        onClick={() => !forwardComplaint.isPending && setSelectedTeam(selectedTeam?.id === team.id ? null : team)}
                         className={`group flex items-center gap-4 p-4 border rounded-xl transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${selectedTeam?.id === team.id
                             ? 'border-blue-500 bg-blue-50 shadow-md'
                             : 'border-slate-200 hover:border-blue-300'
-                          }`}
+                          } ${forwardComplaint.isPending ? 'opacity-50 pointer-events-none' : ''}`}
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div className="flex items-center gap-4 flex-1">
@@ -176,10 +211,10 @@ export default function ForwardTeamPopup({ open, setOpen, complainId, MyTeamId }
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    disabled={!selectedTeam}
+                    disabled={!selectedTeam || forwardComplaint.isPending}
                     placeholder={selectedTeam ? "Add a message with your forwarding request..." : "Select a team to enable message field"}
                     rows={3}
-                    className={`w-full px-4 py-3 border rounded-xl resize-none transition-all duration-200 ${selectedTeam
+                    className={`w-full px-4 py-3 border rounded-xl resize-none transition-all duration-200 ${selectedTeam && !forwardComplaint.isPending
                         ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white text-slate-900'
                         : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
                       }`}
@@ -192,20 +227,28 @@ export default function ForwardTeamPopup({ open, setOpen, complainId, MyTeamId }
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-transparent rounded-b-2xl">
             <button
               onClick={() => setOpen(false)}
-              className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+              disabled={forwardComplaint.isPending}
+              className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
 
             <button
               onClick={handleForward}
-              disabled={!selectedTeam || !message.trim()}
-              className={`px-6 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${selectedTeam && message.trim()
+              disabled={!selectedTeam || !message.trim() || forwardComplaint.isPending}
+              className={`px-6 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${selectedTeam && message.trim() && !forwardComplaint.isPending
                   ? 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-300'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
             >
-              Forward to Team
+              {forwardComplaint.isPending ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Forwarding...
+                </div>
+              ) : (
+                'Forward to Team'
+              )}
             </button>
           </div>
         </Dialog.Panel>
