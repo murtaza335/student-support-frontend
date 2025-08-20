@@ -18,7 +18,7 @@ export const ticketDetailsSchema = ticketSchema.extend({
     workers: z.array(z.object({
       workerId: z.number(),
       workerName: z.string(),
-      workerPic: z.string().url(),
+      workerPic: z.string(),
       workerStatus: workerComplaintStatusEnum.optional(),
     })),
     currentWorkerStatus: workerComplaintStatusEnum.optional().nullable(),

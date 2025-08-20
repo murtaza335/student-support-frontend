@@ -21,7 +21,7 @@ interface EditAssignmentPopupProps {
 
 export default function EditAssignmentPopup({ open, setOpen, complaintId, assignedWorkers, mode = "edit" }: EditAssignmentPopupProps) {
   const router = useRouter();
-  
+  const utils = api.useUtils();
   // State for selected workers to assign
   const [selectedWorkers, setSelectedWorkers] = useState<WorkerAssignment[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -105,11 +105,14 @@ export default function EditAssignmentPopup({ open, setOpen, complaintId, assign
       });
       
       console.log('Workers assigned successfully:', response);
-      router.refresh(); // Refresh the page to reflect changes
+      await utils.complaints.getComplainInfo.invalidate({ id: String(complaintId) }); // Invalidate cache to refresh data
+      await utils.complaints.getComplaintLogs.invalidate({ complaintId: String(complaintId) }); // Invalidate logs cache
+      await utils.teams.getWorkersWhileAssignment.invalidate({ complaintId : complaintId }); // Invalidate workers cache
       setOpen(false); // Close popup
       setSelectedWorkers([]); // Clear selections
     } catch (error) {
       console.error('Error assigning workers:', error);
+      
       // Optionally show toast/notification
     } finally {
       setIsAssigning(false);
@@ -129,9 +132,13 @@ export default function EditAssignmentPopup({ open, setOpen, complaintId, assign
         newWorkerId: newWorkerToAssign.workerId,
         reason: replacementReason.trim()
       });
+      console.log(response);
       
       console.log('Assignment replaced successfully:', response);
-      router.refresh(); // Refresh the page to reflect changes
+      await utils.complaints.getComplainInfo.invalidate({ id: String(complaintId) }); // Invalidate cache to refresh data
+      await utils.complaints.getComplaintLogs.invalidate({ complaintId: String(complaintId) }); // Invalidate logs cache
+      await utils.teams.getWorkersWhileAssignment.invalidate({ complaintId : complaintId }); // Invalidate workers cache
+
       setOpen(false); // Close popup
       
       // Reset replace states

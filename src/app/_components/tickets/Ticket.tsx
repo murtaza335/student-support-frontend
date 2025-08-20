@@ -19,6 +19,7 @@ const ComplaintCard = ({ ticket }: TicketProps) => {
   const { user } = useUser();
   const role = user?.publicMetadata?.role ?? 'guest';
   const router = useRouter();
+  const utils = api.useUtils();
   // const [isMobile, setIsMobile] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -36,10 +37,9 @@ const ComplaintCard = ({ ticket }: TicketProps) => {
 
   // api to activate the complaint
   const { mutate: activateComplaint, isPending: isActivating } = api.complaints.activateTicketInQueue.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       console.log('Ticket activated successfully');
-      // Optionally refresh the page or show a toast
-      // window.location.reload();
+      await utils.workerDash.getWorkerTickets.invalidate();
     },
     onError: (error) => {
       console.error('Error activating ticket:', error);
