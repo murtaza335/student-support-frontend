@@ -46,7 +46,18 @@ export default function ComplaintForm() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Refs for scrolling to error fields
+  const titleRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLSelectElement>(null);
+  const subCategoryRef = useRef<HTMLSelectElement>(null);
+  const issueOptionRef = useRef<HTMLSelectElement>(null);
+  const customDescriptionRef = useRef<HTMLTextAreaElement>(null);
+  const deviceRef = useRef<HTMLInputElement>(null);
+  const submissionPreferenceRef = useRef<HTMLSelectElement>(null);
+  const priorityRef = useRef<HTMLSelectElement>(null);
 
   const { data: categoriesResponse, isLoading: categoriesLoading } = api.complaints.getCategories.useQuery();
   const categories = categoriesResponse?.data?.categories ?? [];
@@ -67,11 +78,15 @@ export default function ComplaintForm() {
   const generateComplain = api.complaints.generateComplain.useMutation({
     onSuccess: (data) => {
       console.log('Complaint generated successfully:', data);
-      // You might want to redirect or show success message here
+      addToast('Complaint submitted successfully!', 'success');
+      // Redirect to employee dashboard after successful submission
+      router.push('/dashboard/employee');
     },
     onError: (error) => {
       console.error('Error generating complaint:', error);
-      // You might want to show error message here
+      addToast(`Error submitting complaint: ${error.message || 'Please try again'}`, 'error');
+      setIsUploading(false);
+      setUploadProgress('');
     },
   });
 
@@ -101,21 +116,55 @@ export default function ComplaintForm() {
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    // Clear error for the field being updated
+    if (errors[key]) {
+      setErrors(prev => ({ ...prev, [key]: '' }));
+    }
   };
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return;
     
-    const newUploads = Array.from(files).map(file => ({
-      file,
-      note: '',
-      type: getFileType(file)
-    }));
+    // Validate file size and count
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const maxFiles = 5;
     
-    setForm((prev) => ({
-      ...prev,
-      uploads: [...prev.uploads, ...newUploads],
-    }));
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+    
+    if (form.uploads.length + files.length > maxFiles) {
+      addToast(`You can only upload up to ${maxFiles} files. Please remove some files first.`, 'error');
+      return;
+    }
+    
+    Array.from(files).forEach(file => {
+      if (file.size > maxFileSize) {
+        invalidFiles.push(`${file.name} (${formatFileSize(file.size)} - exceeds 10MB limit)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+    
+    if (invalidFiles.length > 0) {
+      addToast(`Some files were rejected: ${invalidFiles.join(', ')}`, 'error');
+    }
+    
+    if (validFiles.length > 0) {
+      const newUploads = validFiles.map(file => ({
+        file,
+        note: '',
+        type: getFileType(file)
+      }));
+      
+      setForm((prev) => ({
+        ...prev,
+        uploads: [...prev.uploads, ...newUploads],
+      }));
+      
+      if (validFiles.length > 0) {
+        addToast(`${validFiles.length} file(s) added successfully`, 'success');
+      }
+    }
   };
 
   const getFileType = (file: File): string => {
@@ -171,8 +220,97 @@ export default function ComplaintForm() {
     handleFileSelect(e.dataTransfer.files);
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required field validations
+    if (!form.title.trim()) {
+      newErrors.title = 'Complaint title is required';
+    }
+    
+    if (!form.categoryId) {
+      newErrors.categoryId = 'Category selection is required';
+    }
+    
+    if (!form.subCategoryId) {
+      newErrors.subCategoryId = 'Subcategory selection is required';
+    }
+    
+    if (!form.issueOptionId) {
+      newErrors.issueOptionId = 'Issue selection is required';
+    }
+    
+    if (!form.device.trim()) {
+      newErrors.device = 'Device/Platform information is required';
+    }
+    
+    if (!form.submissionPreference) {
+      newErrors.submissionPreference = 'Preferred contact method is required';
+    }
+    
+    if (!form.priority) {
+      newErrors.priority = 'Priority level is required';
+    }
+    
+    // If "Other" is selected, custom description is required
+    if (isOther && !form.customDescription.trim()) {
+      newErrors.customDescription = 'Description is required when "Other" is selected';
+    }
+    
+    setErrors(newErrors);
+    
+    // Scroll to first error field
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.keys(newErrors)[0];
+      let elementToFocus: HTMLElement | null = null;
+      
+      switch (firstError) {
+        case 'title':
+          elementToFocus = titleRef.current;
+          break;
+        case 'categoryId':
+          elementToFocus = categoryRef.current;
+          break;
+        case 'subCategoryId':
+          elementToFocus = subCategoryRef.current;
+          break;
+        case 'issueOptionId':
+          elementToFocus = issueOptionRef.current;
+          break;
+        case 'customDescription':
+          elementToFocus = customDescriptionRef.current;
+          break;
+        case 'device':
+          elementToFocus = deviceRef.current;
+          break;
+        case 'submissionPreference':
+          elementToFocus = submissionPreferenceRef.current;
+          break;
+        case 'priority':
+          elementToFocus = priorityRef.current;
+          break;
+      }
+      
+      if (elementToFocus) {
+        elementToFocus.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        elementToFocus.focus();
+      }
+      
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async () => {
-    if (!form.title || !form.categoryId || !form.subCategoryId || !form.issueOptionId) {
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate form
+    if (!validateForm()) {
       addToast('Please fill in all required fields.', 'error');
       return;
     }
@@ -184,18 +322,24 @@ export default function ComplaintForm() {
       // Upload all files and get their URLs
       const uploadsWithUrls = await Promise.all(
         form.uploads.map(async (upload, index) => {
-          setUploadProgress(`Uploading file ${index + 1} of ${form.uploads.length}...`);
-          return {
-            type: upload.type,
-            url: await uploadAttachment(upload.file),
-            note: upload.note || null,
-          };
+          setUploadProgress(`Uploading file ${index + 1} of ${form.uploads.length}: ${upload.file.name}...`);
+          try {
+            const url = await uploadAttachment(upload.file);
+            return {
+              type: upload.type,
+              url: url,
+              note: upload.note || null,
+            };
+          } catch (uploadError) {
+            console.error(`Failed to upload ${upload.file.name}:`, uploadError);
+            throw new Error(`Failed to upload ${upload.file.name}: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+          }
         })
       );
 
       setUploadProgress('Submitting complaint...');
 
-      generateComplain.mutate({
+      const complaintData = {
         categoryId: form.categoryId,
         subCategoryId: form.subCategoryId,
         issueOptionId: form.issueOptionId,
@@ -205,9 +349,12 @@ export default function ComplaintForm() {
         title: form.title,
         device: form.device,
         uploads: uploadsWithUrls,
-      });
+      };
+
+      generateComplain.mutate(complaintData);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred during file upload';
+      console.error('Error during submission:', error);
       addToast('Error during submission: ' + errorMessage, 'error');
       setIsUploading(false);
       setUploadProgress('');
@@ -276,13 +423,31 @@ export default function ComplaintForm() {
                 <span className="text-red-500 ml-1">*</span>
               </label>
               <input
+                ref={titleRef}
                 type="text"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-all duration-200 text-gray-900 placeholder-gray-400 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 text-gray-900 placeholder-gray-400 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  errors.title 
+                    ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                    : 'border-gray-200 focus:border-blue-500'
+                }`}
                 placeholder="Brief description of your complaint"
                 value={form.title}
-                onChange={(e) => handleChange('title', e.target.value)}
+                onChange={(e) => {
+                  handleChange('title', e.target.value);
+                  if (errors.title) {
+                    setErrors(prev => ({ ...prev, title: '' }));
+                  }
+                }}
                 disabled={isSubmitting}
               />
+              {errors.title && (
+                <p className="text-red-500 text-sm mt-1 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.title}
+                </p>
+              )}
             </div>
 
             {/* Issue Classification */}
@@ -290,18 +455,29 @@ export default function ComplaintForm() {
               <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
                 <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
                 Issue Classification
+                <span className="text-red-500 ml-2 text-sm font-normal">(All fields required)</span>
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Category <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-all duration-200 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    ref={categoryRef}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      errors.categoryId 
+                        ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
                     value={form.categoryId}
                     onChange={(e) => {
                       handleChange('categoryId', e.target.value);
                       handleChange('subCategoryId', '');
                       handleChange('issueOptionId', '');
+                      if (errors.categoryId) {
+                        setErrors(prev => ({ ...prev, categoryId: '' }));
+                      }
                     }}
                     disabled={categoriesLoading || isSubmitting}
                   >
@@ -316,6 +492,14 @@ export default function ComplaintForm() {
                       ) : null
                     )}
                   </select>
+                  {errors.categoryId && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.categoryId}
+                    </p>
+                  )}
                   {categoriesLoading && (
                     <div className="flex items-center text-sm text-gray-500">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-2"></div>
@@ -325,13 +509,23 @@ export default function ComplaintForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Subcategory</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Subcategory <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900"
+                    ref={subCategoryRef}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900 ${
+                      errors.subCategoryId 
+                        ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
                     value={form.subCategoryId}
                     onChange={(e) => {
                       handleChange('subCategoryId', e.target.value);
                       handleChange('issueOptionId', '');
+                      if (errors.subCategoryId) {
+                        setErrors(prev => ({ ...prev, subCategoryId: '' }));
+                      }
                     }}
                     disabled={!form.categoryId || subcategoriesLoading || isSubmitting}
                   >
@@ -344,6 +538,14 @@ export default function ComplaintForm() {
                       </option>
                     ))}
                   </select>
+                  {errors.subCategoryId && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.subCategoryId}
+                    </p>
+                  )}
                   {subcategoriesLoading && (
                     <div className="flex items-center text-sm text-gray-500">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-2"></div>
@@ -353,11 +555,23 @@ export default function ComplaintForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Specific Issue</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Specific Issue <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900"
+                    ref={issueOptionRef}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900 ${
+                      errors.issueOptionId 
+                        ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
                     value={form.issueOptionId}
-                    onChange={(e) => handleChange('issueOptionId', e.target.value)}
+                    onChange={(e) => {
+                      handleChange('issueOptionId', e.target.value);
+                      if (errors.issueOptionId) {
+                        setErrors(prev => ({ ...prev, issueOptionId: '' }));
+                      }
+                    }}
                     disabled={!form.subCategoryId || issuesLoading || isSubmitting}
                   >
                     <option value="">
@@ -369,6 +583,14 @@ export default function ComplaintForm() {
                       </option>
                     ))}
                   </select>
+                  {errors.issueOptionId && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.issueOptionId}
+                    </p>
+                  )}
                   {issuesLoading && (
                     <div className="flex items-center text-sm text-gray-500">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-2"></div>
@@ -389,45 +611,88 @@ export default function ComplaintForm() {
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-orange-800">Please describe your complaint</h4>
+                    <h4 className="font-semibold text-orange-800">
+                      Please describe your complaint <span className="text-red-500">*</span>
+                    </h4>
                     <p className="text-sm text-orange-600">Provide as much detail as possible to help us understand and resolve your concern</p>
                   </div>
                 </div>
                 <textarea
+                  ref={customDescriptionRef}
                   rows={4}
-                  className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:border-orange-400 focus:ring-0 transition-all duration-200 resize-none text-gray-900 placeholder-orange-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 resize-none text-gray-900 placeholder-orange-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    errors.customDescription 
+                      ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                      : 'border-orange-200 focus:border-orange-400'
+                  }`}
                   placeholder="Please provide a detailed description of your complaint..."
                   value={form.customDescription}
-                  onChange={(e) => handleChange('customDescription', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('customDescription', e.target.value);
+                    if (errors.customDescription) {
+                      setErrors(prev => ({ ...prev, customDescription: '' }));
+                    }
+                  }}
                   disabled={isSubmitting}
                 />
+                {errors.customDescription && (
+                  <p className="text-red-500 text-sm mt-2 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.customDescription}
+                  </p>
+                )}
               </div>
             )}
 
             {/* Additional Details */}
             <div className="bg-gray-50 rounded-2xl p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
                 Additional Details
+                <span className="text-red-500 ml-2 text-sm font-normal">(All fields required)</span>
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Device/Platform</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Device/Platform <span className="text-red-500">*</span>
+                  </label>
                   <input
+                    ref={deviceRef}
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-all duration-200 text-gray-900 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 text-gray-900 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      errors.device 
+                        ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
                     placeholder="e.g., Windows 11, iPhone 15"
                     value={form.device}
                     onChange={(e) => handleChange('device', e.target.value)}
                     disabled={isSubmitting}
                   />
+                  {errors.device && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.device}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Preferred Contact Method</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Preferred Contact Method <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-all duration-200 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    ref={submissionPreferenceRef}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      errors.submissionPreference 
+                        ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
                     value={form.submissionPreference}
                     onChange={(e) => handleChange('submissionPreference', e.target.value)}
                     disabled={isSubmitting}
@@ -439,12 +704,27 @@ export default function ComplaintForm() {
                       </option>
                     ))}
                   </select>
+                  {errors.submissionPreference && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.submissionPreference}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Priority Level</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Priority Level <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-all duration-200 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    ref={priorityRef}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-0 transition-all duration-200 bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      errors.priority 
+                        ? 'border-red-500 focus:border-red-500 bg-red-50' 
+                        : 'border-gray-200 focus:border-blue-500'
+                    }`}
                     value={form.priority}
                     onChange={(e) => handleChange('priority', e.target.value)}
                     disabled={isSubmitting}
@@ -456,6 +736,14 @@ export default function ComplaintForm() {
                       </option>
                     ))}
                   </select>
+                  {errors.priority && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.priority}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -500,7 +788,7 @@ export default function ComplaintForm() {
                   </svg>
                   <p className="text-lg font-medium text-gray-700 mb-2">Drop files here to upload</p>
                   <p className="text-sm text-gray-500 mb-4">or click &quot;Browse Files&quot; to select from your device</p>
-                  <p className="text-xs text-gray-400">Supports: Images, Documents, Videos, Log Files (Max 10MB each)</p>
+                  <p className="text-xs text-gray-400">Supports: Images, Documents, Videos, Log Files (Max 10MB each, up to 5 files)</p>
                 </div>
               </div>
 
@@ -589,6 +877,26 @@ export default function ComplaintForm() {
 
             {/* Submit Section */}
             <div className="border-t-2 border-gray-100 pt-8">
+              {/* Error Summary */}
+              {Object.keys(errors).length > 0 && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+                  <div className="flex items-center mb-2">
+                    <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <h4 className="text-sm font-semibold text-red-800">Please fix the following errors:</h4>
+                  </div>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {Object.entries(errors).map(([field, message]) => (
+                      <li key={field} className="flex items-center">
+                        <span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>
+                        {message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   type="submit"
