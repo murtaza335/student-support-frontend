@@ -6,9 +6,21 @@ import { SignOutButton } from '@clerk/nextjs';
 import { useUser } from '@clerk/nextjs';
 import NotificationsComponent from './notifications';
 import Image from 'next/image';
+import { useClerk } from '@clerk/nextjs';
+import { api } from '~/trpc/react';
 
 const Navbar = () => {
   const { user } = useUser();
+  const { signOut } = useClerk();
+  const utils = api.useUtils();
+
+    const handleSignOut = async () => {
+          // First clear tRPC cache
+    await utils.auth.loginCheck.reset();
+
+    // Then sign the user out
+    await signOut({ redirectUrl: '/' }); 
+  };
 
   return (
     <header className="w-full fixed top-0 h-16 bg-white px-4 sm:px-6 flex items-center justify-between z-50 md:left-16 md:w-[calc(100%-4rem)] border-b border-gray-200">
@@ -38,14 +50,16 @@ const Navbar = () => {
 
           {/* Logout - Mobile Optimized */}
           <div className="relative">
-            <SignOutButton>
+            {/* <SignOutButton
+            > */}
               <button
                 className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition"
                 title="Logout"
+                onClick={handleSignOut}
               >
                 <LogOut className="w-4 h-4 text-gray-600" />
               </button>
-            </SignOutButton>
+            {/* </SignOutButton> */}
           </div>
         </div>
       )}

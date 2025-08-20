@@ -4,31 +4,51 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSignIn, useSignUp } from '@clerk/nextjs';
 import { isClerkAPIResponseError } from '@clerk/clerk-js';
+import { api } from '~/trpc/react';
+import { useUser } from '@clerk/nextjs';
 
 export default function CustomAuthForm() {
-  const [mode, setMode] = useState<'sign-in' | 'sign-up' | 'verify-email' | 'forgot-password' | 'code-login'>('sign-in');
+  const {user, isLoaded, isSignedIn} = useUser();
+  const [mode, setMode] = useState<'sign-in' | 'sign-up' | 'verify-email' | 'forgot-password' | 'code-login' | 'reset-password-email' | 'reset-password-code' | 'backup-codes'>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [code, setCode] = useState('');
+  const [backupCode, setBackupCode] = useState('');
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const { signIn, isLoaded: signInLoaded, setActive: setSignInActive } = useSignIn();
   const { signUp, isLoaded: signUpLoaded, setActive: setSignUpActive } = useSignUp();
   const router = useRouter();
+
+  // const { data, isLoading } = api.auth.loginCheck.useQuery(undefined, { enabled: isLoaded && isSignedIn });
+  // const responseData = data?.data;
+  // console.log(responseData);
+
+  // api for the login with codes
+  const loginWithCode = api.auth.loginWithCode.useMutation({
+  });
+  // api for update password
+  const updatePassword = api.auth.updatePassword.useMutation({ });
+
+  // api call for the login with codes
 
   const clearState = () => {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
     setCode('');
+    setBackupCode('');
     setError('');
     setSuccessMsg('');
   };
 
   const handleSignIn = async () => {
-    if (!signInLoaded) return;
+    if (!signInLoaded || isLoading) return;
+    setIsLoading(true);
+    setError('');
     try {
       const result = await signIn.create({ identifier: email, password });
 
@@ -41,15 +61,19 @@ export default function CustomAuthForm() {
     } catch (err) {
       const msg = isClerkAPIResponseError(err) ? err.errors[0]?.message ?? 'Unknown error' : 'Unknown error';
       setError(msg ?? 'Unknown error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSignUp = async () => {
-    if (!signUpLoaded) return;
+    if (!signUpLoaded || isLoading) return;
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+    setIsLoading(true);
+    setError('');
     try {
       await signUp.create({ emailAddress: email, password });
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
@@ -57,11 +81,15 @@ export default function CustomAuthForm() {
     } catch (err) {
       const msg = isClerkAPIResponseError(err) ? err.errors[0]?.message : 'Unknown error';
       setError(msg ?? 'Unknown error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleVerify = async () => {
-    if (!signUpLoaded) return;
+    if (!signUpLoaded || isLoading) return;
+    setIsLoading(true);
+    setError('');
     try {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === 'complete') {
@@ -71,11 +99,18 @@ export default function CustomAuthForm() {
     } catch (err) {
       const msg = isClerkAPIResponseError(err) ? err.errors[0]?.message : 'Unknown error';
       setError(msg ?? 'Unknown error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!signInLoaded) return;
+  const handleForgotPasswordRequest = async () => {
+    if (!signInLoaded || !email || isLoading) {
+      setError('Please enter your email address');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
     try {
       await signIn.create({ identifier: email });
       // Find the emailAddressId from supportedFirstFactors
@@ -89,26 +124,126 @@ export default function CustomAuthForm() {
       }
       await signIn.prepareFirstFactor({ strategy: 'reset_password_email_code', emailAddressId });
       setSuccessMsg('Reset code sent to your email.');
+      setError(''); // Clear any previous errors
       setMode('code-login');
     } catch (err) {
       const msg = isClerkAPIResponseError(err) ? err.errors[0]?.message : 'Error';
       setError(msg ?? 'Unknown error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleForgotPassword = () => {
+    setError('');
+    setSuccessMsg('');
+    setMode('forgot-password');
+  };
+
   const handleCodeLogin = async () => {
-    if (!signInLoaded) return;
+    if (!signInLoaded || isLoading) return;
+    setIsLoading(true);
+    setError('');
     try {
       const result = await signIn.attemptFirstFactor({ strategy: 'reset_password_email_code', code });
-      if (result.status === 'complete') {
+      if (result.status === 'needs_new_password') {
+        setSuccessMsg('Code verified! Please enter your new password.');
+        setError(''); // Clear any previous errors
+        setMode('reset-password-email');
+      } else if (result.status === 'complete') {
         await setSignInActive({ session: result.createdSessionId });
         router.push('/');
       } else {
-        setError('Invalid code or step incomplete');
+        setError('Invalid code. Please try again.');
+      }
+    } catch (err) {
+      const msg = isClerkAPIResponseError(err) ? err.errors[0]?.message : 'Invalid code';
+      setError(msg ?? 'Invalid code');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackupCodeLogin = async () => {
+    console.log("email", email);
+    if (!email || !backupCode) {
+      setError('Please enter both email and backup code');
+      return;
+    }
+    if (loginWithCode.isPending || isLoading) return;
+    
+    setError('');
+    try {
+      // here we will call the login with backup codes api
+      console.log("email", email);
+      const result = await loginWithCode.mutateAsync({ 
+        email: email,
+        code: backupCode 
+      });
+      // on success we will show the reset password code section
+      if (!result.success) {
+        setError('Invalid email or backup code. Please try again.');
+        return;
+      }
+      setSuccessMsg('Backup code verified! Please enter the reset password code.');
+      setError('');
+      setMode('reset-password-code');
+    } catch (err) {
+      setError('Invalid email or backup code. Please try again.');
+    }
+  };
+
+  const handleResetPasswordEmail = async () => {
+    if (!signInLoaded || isLoading) return;
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+    console.log("password", password);
+    try {
+      const result = await signIn.resetPassword({ password });
+      console.log("password", password);
+      console.log("result", result);
+      if (result.status === 'complete') {
+        await setSignInActive({ session: result.createdSessionId });
+        setSuccessMsg('Password reset successfully!');
+        router.push('/');
       }
     } catch (err) {
       const msg = isClerkAPIResponseError(err) ? err.errors[0]?.message : 'Error';
+      console.log("Error in reset password", msg);
       setError(msg ?? 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPasswordCode = async () => {
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (!password || !confirmPassword) {
+      setError('Please fill in all password fields');
+      return;
+    }
+    if (updatePassword.isPending || isLoading) return;
+    
+    setError('');
+    try {
+      const result = await updatePassword.mutateAsync({ email: email, newPassword: password });
+      if(!result.success) {
+        setError('Failed to reset password. Please try again.');
+        return;
+      }
+      // For now, just show success and redirect
+      setSuccessMsg('Password reset successfully!');
+      setError('');
+      router.push('/');
+    } catch (err) {
+      setError('Failed to reset password. Please try again.');
     }
   };
 
@@ -118,7 +253,8 @@ export default function CustomAuthForm() {
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="w-full px-4 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      disabled={isLoading || loginWithCode.isPending || updatePassword.isPending}
+      className="w-full px-4 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
     />
   );
 
@@ -131,14 +267,23 @@ export default function CustomAuthForm() {
             {renderInput('password', 'Password', password, (e) => setPassword(e.target.value))}
             {renderInput('password', 'Confirm Password', confirmPassword, (e) => setConfirmPassword(e.target.value))}
             <button
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
               onClick={handleSignUp}
+              disabled={isLoading || !signUpLoaded}
             >
-              Sign Up
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating Account...
+                </>
+              ) : 'Sign Up'}
             </button>
             <p className="text-sm text-center mt-4">
               Already have an account?{' '}
-              <button onClick={() => { clearState(); setMode('sign-in'); }} className="text-blue-600 hover:underline">
+              <button onClick={() => { clearState(); setMode('sign-in'); }} className="text-blue-600 hover:underline" disabled={isLoading}>
                 Sign In
               </button>
             </p>
@@ -150,19 +295,28 @@ export default function CustomAuthForm() {
             {renderInput('email', 'Email', email, (e) => setEmail(e.target.value))}
             {renderInput('password', 'Password', password, (e) => setPassword(e.target.value))}
             <button
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
               onClick={handleSignIn}
+              disabled={isLoading || !signInLoaded}
             >
-              Sign In
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing In...
+                </>
+              ) : 'Sign In'}
             </button>
             <p className="text-sm text-center mt-4">
-              <button onClick={() => { clearState(); setMode('forgot-password'); }} className="text-blue-500 hover:underline">
+              <button onClick={handleForgotPassword} className="text-blue-500 hover:underline" disabled={isLoading}>
                 Forgot Password?
               </button>
             </p>
             <p className="text-sm text-center mt-2">
-              Don’t have an account?{' '}
-              <button onClick={() => { clearState(); setMode('sign-up'); }} className="text-blue-600 hover:underline">
+              Don&apos;t have an account?{' '}
+              <button onClick={() => { clearState(); setMode('sign-up'); }} className="text-blue-600 hover:underline" disabled={isLoading}>
                 Sign Up
               </button>
             </p>
@@ -174,42 +328,166 @@ export default function CustomAuthForm() {
             <p className="mb-2 text-sm text-gray-700">Enter the verification code sent to your email.</p>
             {renderInput('text', 'Verification Code', code, (e) => setCode(e.target.value))}
             <button
-              className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+              className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
               onClick={handleVerify}
+              disabled={isLoading || !signUpLoaded}
             >
-              Verify Email
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Verifying...
+                </>
+              ) : 'Verify Email'}
+            </button>
+          </>
+        );
+      case 'code-login':
+        return (
+          <>
+            <p className="text-sm text-gray-700 mb-2">Enter the security code sent to your email.</p>
+            {renderInput('text', 'Security Code', code, (e) => setCode(e.target.value))}
+            <button
+              className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              onClick={handleCodeLogin}
+              disabled={isLoading || !signInLoaded}
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Verifying...
+                </>
+              ) : 'Verify Code'}
+            </button>
+            <p className="text-sm text-center mt-4">
+              Didn&apos;t receive the code?{' '}
+              <button onClick={() => { setError(''); setSuccessMsg(''); setMode('backup-codes'); }} className="text-blue-600 hover:underline" disabled={isLoading}>
+                Use backup codes instead
+              </button>
+            </p>
+            <p className="text-sm text-center mt-2">
+              <button onClick={() => { clearState(); setMode('sign-in'); }} className="text-blue-600 hover:underline" disabled={isLoading}>
+                Back to Sign In
+              </button>
+            </p>
+          </>
+        );
+      case 'backup-codes':
+        return (
+          <>
+            <p className="text-sm text-gray-700 mb-2">Enter your email and one of your backup codes to reset your password.</p>
+            {renderInput('email', 'Email Address', email, (e) => setEmail(e.target.value))}
+            {renderInput('text', 'Backup Code', backupCode, (e) => setBackupCode(e.target.value))}
+            <button
+              className="w-full bg-orange-600 text-white py-2 rounded-md hover:bg-orange-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              onClick={handleBackupCodeLogin}
+              disabled={loginWithCode.isPending}
+            >
+              {loginWithCode.isPending ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Verifying...
+                </>
+              ) : 'Verify Backup Code'}
+            </button>
+            <p className="text-sm text-center mt-4">
+              <button onClick={() => { setError(''); setSuccessMsg(''); setMode('code-login'); }} className="text-blue-600 hover:underline" disabled={loginWithCode.isPending}>
+                Back to email code
+              </button>
+            </p>
+            <p className="text-sm text-center mt-2">
+              <button onClick={() => { clearState(); setMode('sign-in'); }} className="text-blue-600 hover:underline" disabled={loginWithCode.isPending}>
+                Back to Sign In
+              </button>
+            </p>
+          </>
+        );
+      case 'reset-password-email':
+        return (
+          <>
+            <p className="text-sm text-gray-700 mb-2">Enter your new password.</p>
+            {renderInput('password', 'New Password', password, (e) => setPassword(e.target.value))}
+            {renderInput('password', 'Confirm New Password', confirmPassword, (e) => setConfirmPassword(e.target.value))}
+            <button
+              className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              onClick={handleResetPasswordEmail}
+              disabled={isLoading || !signInLoaded}
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Resetting...
+                </>
+              ) : 'Reset Password'}
+            </button>
+          </>
+        );
+      case 'reset-password-code':
+        return (
+          <>
+            <p className="text-sm text-gray-700 mb-2">Enter your new password.</p>
+            {renderInput('password', 'New Password', password, (e) => setPassword(e.target.value))}
+            {renderInput('password', 'Confirm New Password', confirmPassword, (e) => setConfirmPassword(e.target.value))}
+            <button
+              className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              onClick={handleResetPasswordCode}
+              disabled={updatePassword.isPending}
+            >
+              {updatePassword.isPending ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Resetting...
+                </>
+              ) : 'Reset Password'}
             </button>
           </>
         );
       case 'forgot-password':
         return (
           <>
+            <p className="text-sm text-gray-700 mb-2">Enter your email address to receive a password reset code.</p>
             {renderInput('email', 'Enter your email', email, (e) => setEmail(e.target.value))}
             <button
-              className="w-full bg-yellow-600 text-white py-2 rounded-md hover:bg-yellow-700 transition"
-              onClick={handleForgotPassword}
+              className="w-full bg-yellow-600 text-white py-2 rounded-md hover:bg-yellow-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              onClick={handleForgotPasswordRequest}
+              disabled={isLoading || !signInLoaded}
             >
-              Send Reset Code
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Sending...
+                </>
+              ) : 'Send Reset Code'}
             </button>
             <p className="text-sm text-center mt-4">
-              Remembered password?{' '}
-              <button onClick={() => { clearState(); setMode('sign-in'); }} className="text-blue-600 hover:underline">
+              Have backup codes?{' '}
+              <button onClick={() => { setError(''); setSuccessMsg(''); setMode('backup-codes'); }} className="text-blue-600 hover:underline" disabled={isLoading}>
+                Use backup codes instead
+              </button>
+            </p>
+            <p className="text-sm text-center mt-2">
+              Remembered your password?{' '}
+              <button onClick={() => { clearState(); setMode('sign-in'); }} className="text-blue-600 hover:underline" disabled={isLoading}>
                 Back to Sign In
               </button>
             </p>
-          </>
-        );
-      case 'code-login':
-        return (
-          <>
-            <p className="text-sm text-gray-700 mb-2">Enter the reset code sent to your email.</p>
-            {renderInput('text', 'Reset Code', code, (e) => setCode(e.target.value))}
-            <button
-              className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition"
-              onClick={handleCodeLogin}
-            >
-              Log In with Code
-            </button>
           </>
         );
     }

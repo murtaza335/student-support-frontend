@@ -99,7 +99,7 @@ export const authRouter = createTRPCRouter({
 
   // this is to login if the user forgots his password and uses the previously generated codes at the time of profile completion
   loginWithCode: publicProcedure
-    .input(z.object({ code: z.string() }))
+    .input(z.object({ code: z.string(), email: z.string().email() }))
     .mutation(async ({ ctx, input }) => {
       const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth`;
       const res = await fetch(`${BASE_URL}/login-with-code`, {
@@ -108,7 +108,7 @@ export const authRouter = createTRPCRouter({
           Authorization: `Bearer ${ctx.token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code: input.code }),
+        body: JSON.stringify({ code: input.code, email : input.email }),
         credentials: "include",
       });
       const json = await res.json() as unknown;

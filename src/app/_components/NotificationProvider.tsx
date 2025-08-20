@@ -5,8 +5,6 @@ import { io, Socket } from 'socket.io-client';
 import { useUser } from '@clerk/nextjs';
 import { api } from '~/trpc/react'; // 👈 for invalidation
 import { useToast } from './ToastProvider';
-import { notifyManager } from '@tanstack/react-query';
-import { add } from 'date-fns';
 
 type BackendNotification = {
   type: string;
@@ -33,11 +31,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [notifications, setNotifications] = useState<BackendNotification[]>([]);
   const utils = api.useUtils();
 
-  const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
+  const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
 
   const playNotificationSound = () => {
     const audio = new Audio('/notification.mp3');
-    audio.play().catch(() => {});
+    audio.play().catch((err) => {
+  // Ignore playback errors (e.g., user gesture required)
+});
   };
 
   useEffect(() => {

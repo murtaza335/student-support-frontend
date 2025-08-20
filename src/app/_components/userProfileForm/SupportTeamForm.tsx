@@ -5,7 +5,6 @@ import InputField from './InputField';
 import SelectField from './SelectField';
 import type { supportStaffRoles } from '~/types/enums';
 import type { SupportStaffMember } from '~/types/user/supportStaffMemberSchema';
-import { useUserStatus } from '~/store/loginCheck';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, Users, CheckCircle, ArrowRight, Shield } from 'lucide-react';
 import { uploadProfileImage } from '~/utils/UploadProfileImage';
@@ -21,7 +20,6 @@ interface Props {
 
 const SupportTeamForm = ({ initialUser, roleOptions, onSwitch }: Props) => {
   const { addToast } = useToast();
-  const { setExist, setApproved } = useUserStatus();
   const Router = useRouter();
 
   const [formData, setFormData] = useState<Partial<SupportStaffMember>>(initialUser);
@@ -39,9 +37,7 @@ const SupportTeamForm = ({ initialUser, roleOptions, onSwitch }: Props) => {
   const { mutate: completeProfileStaff, isPending: isSubmitting } = api.auth.completeProfileStaff.useMutation({
     onSuccess: () => {
       setSubmitted(true);
-      setExist(true);
-      setApproved(false);
-      Router.refresh();
+      Router.push('/waiting-for-approval');
     },
     onError: () => addToast('Something went wrong!'),
   });
@@ -127,24 +123,24 @@ const SupportTeamForm = ({ initialUser, roleOptions, onSwitch }: Props) => {
   };
   const isLoading = isSubmitting || isUploading || isTeamLoading;
 
-  if (submitted) {
-    return (
-      <div className="max-w-2xl mx-auto p-8">
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-8 text-center shadow-lg">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Support Team Profile Submitted!</h3>
-          <p className="text-gray-600 mb-4">
-            Your support team profile has been submitted for approval. Our admin team will review your application shortly.
-          </p>
-          <div className="w-full bg-blue-200 rounded-full h-2">
-            <div className="bg-emerald-600 h-2 rounded-full w-full"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (submitted) {
+  //   return (
+  //     <div className="max-w-2xl mx-auto p-8">
+  //       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-8 text-center shadow-lg">
+  //         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+  //           <CheckCircle className="w-8 h-8 text-emerald-600" />
+  //         </div>
+  //         <h3 className="text-2xl font-bold text-gray-900 mb-2">Support Team Profile Submitted!</h3>
+  //         <p className="text-gray-600 mb-4">
+  //           Your support team profile has been submitted for approval. Our admin team will review your application shortly.
+  //         </p>
+  //         <div className="w-full bg-blue-200 rounded-full h-2">
+  //           <div className="bg-emerald-600 h-2 rounded-full w-full"></div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="max-w-4xl mx-auto p-6">

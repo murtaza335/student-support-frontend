@@ -4,17 +4,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth, SignIn } from '@clerk/nextjs';
 import Loader from '~/app/_components/Loader';
 import { api } from '~/trpc/react';
-import { useUserStatus } from '~/store/loginCheck';
+import CustomAuthForm from './_components/auth/AuthModal';
 
 
 export default function Home() {
-
-  // Zustand store for login check
-  const { setExist, setApproved } = useUserStatus();
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
 
-  const { data, isLoading } = api.auth.loginCheck.useQuery(undefined, { enabled: isLoaded && isSignedIn,});
+  const { data, isLoading } = api.auth.loginCheck.useQuery(undefined, { enabled: isLoaded && isSignedIn });
   const responseData = data?.data;
   // Handle navigation based on loginCheck data
   useEffect(() => {
@@ -24,19 +21,11 @@ export default function Home() {
       if (responseData) {
         // if exists and not approved, redirect to complete profile
         if (!responseData.exist) {
-          
           router.push('/complete-profile');
-          setExist(false);
-          setApproved(false);
         } else if (!responseData.approved) {
-          setExist(true);
-          setApproved(false);
-          router.push('/complete-profile');
-          
+          router.push('/waiting-for-approval');
         }
         else if (responseData.approved) {
-          setExist(true);
-          setApproved(true);
           // Redirect based on role
           if (role === 'admin') {
             router.push('/dashboard/admin');
@@ -57,9 +46,7 @@ export default function Home() {
         }
       }
     }
-  }, [data, responseData, router, setApproved, setExist]);
-
-
+  }, [data, responseData, router,]);
 
   if (!isLoaded || isLoading) {
     return (
@@ -74,9 +61,9 @@ export default function Home() {
   return (
     <div className="main bg-white h-[calc(100vh-4rem)] flex items-center justify-center">
       <div className="signInContainer m-auto">
-        <SignIn routing="hash" />
+        {/* <SignIn routing="hash" /> */}
         {/* <AuthModal open={true} onOpenChange={() => {}} /> */}
-        {/* <CustomAuthForm /> */}
+        <CustomAuthForm />
       </div>
     </div>
   );

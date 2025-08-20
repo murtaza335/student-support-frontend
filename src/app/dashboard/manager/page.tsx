@@ -16,9 +16,6 @@ import ErrorLoading from "~/app/_components/unauthorized/errorLoading";
 export default function ManagerPage() {
   const { showModal, setShowModal, isError, codes, retry,
   } = useSecurityCodes();
-
-  //   calling the login-check api to verify if the user is logged in and has the right permissions
-  //   const { data: loginData, isLoading: loginLoading, error: loginError } = api.auth.loginCheck.useQuery();
   // here we will make an api call to get the complaints created by the employee
   const { data: tickets, isLoading: ticketsLoading, error: ticketsError } = api.managerDash.getTeamComplaints.useQuery();
 

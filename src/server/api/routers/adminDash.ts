@@ -1,6 +1,7 @@
 
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { z } from "zod";
+import { responseWithoutDataSchema } from "~/lib/responseSchema";
 import { unapprovedRegistrationsResponseSchema } from "~/types/responseTypes/adminDashResponses/adminDashResponses";
 import { getAllUsersResponseSchema } from "~/types/user/allUsersSchema";
 
@@ -42,7 +43,7 @@ export const adminDashRouter = createTRPCRouter({
             });
             const json = await res.json() as unknown;
             console.log("raw response of approve user", json);
-            const validated = unapprovedRegistrationsResponseSchema.parse(json);
+            const validated = responseWithoutDataSchema.parse(json);
             console.log("validated response of approve user", validated);
             return validated;
 
@@ -64,7 +65,7 @@ export const adminDashRouter = createTRPCRouter({
             });
             const json = await res.json() as unknown;
             console.log("raw response of reject user", json);
-            const validated = unapprovedRegistrationsResponseSchema.parse(json);
+            const validated = responseWithoutDataSchema.parse(json);
             console.log("validated response of reject user", validated);
             return validated;
         }),

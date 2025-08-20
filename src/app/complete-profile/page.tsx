@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 import RegularUserForm from '../_components/userProfileForm/EmployeeForm';
 import SupportTeamForm from '../_components/userProfileForm/SupportTeamForm';
-import WaitingForApproval from '../_components/userProfileForm/waitingForApproval';
 
 import type { SupportStaffMember } from '~/types/user/supportStaffMemberSchema';
 import type { NustEmployee } from '~/types/user/nustEmployeeSchema';
 import { supportStaffRolesEnum } from '~/types/enums';
-import { useUserStatus } from '~/store/loginCheck';
-import { User, Shield, Clock, CheckCircle } from 'lucide-react';
+import { User, Shield } from 'lucide-react';
 import Loader from '../_components/Loader';
-import { api } from '~/trpc/react';
 import { useRouter } from 'next/navigation';
 
 const defaultNustEmployee: NustEmployee = {
@@ -46,69 +44,31 @@ const defaultSupportStaff: SupportStaffMember = {
 
 const UserProfileForm = () => {
   const router = useRouter();
-  const { exist, approved, hydrated } = useUserStatus();
+  const { user, isLoaded, isSignedIn } = useUser();
   const [userType, setUserType] = useState<'employee' | 'support'>('employee');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const { data, isLoading } = api.auth.loginCheck.useQuery(undefined);
-  const responseData = data?.data;
-  // Handle navigation based on loginCheck data
-  useEffect(() => {
-    
-    if (data?.success) {
-      const role = responseData?.role;
-      if (responseData) {
-        // if exists and not approved, redirect to complete profile
-        if (!responseData.exist) {
-          
-          router.push('/complete-profile');
-        } else if (!responseData.approved) {
-          router.push('/complete-profile');
-          
-        }
-        else if (responseData.approved) {
-          // Redirect based on role
-          if (role === 'admin') {
-            router.push('/dashboard/admin');
-          }
-          else if (role === 'manager') {
-            router.push('/dashboard/manager');
-          }
-          else if (role === 'employee') {
-            router.push('/dashboard/employee');
-          }
-          else if (role === 'worker') {
-            router.push('/dashboard/worker');
-          } 
-          else {
-            console.error('Unknown role:', role);
-            // Optionally handle unknown roles
-          }
-        }
-      }
-    }
-  }, [data, responseData, router]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (isLoading || !hydrated || !mounted) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
-            <Loader />
-          </div>
-          <h3 className="text-xl font-semibold text-neutral-800 mb-2">Loading Portal</h3>
-          <p className="text-neutral-600">Please wait while we prepare your experience...</p>
-        </div>
-      </div>
-    );
+  // Just return null if not authenticated - let middleware handle redirect
+  if (!isLoaded) {
+    return null; // Minimal loading - just wait for auth to load
   }
 
-  const handleSubmit = (data: Partial<SupportStaffMember | NustEmployee>) => {
-    console.log('Form submitted:', data);
+  if (!isSignedIn || !user) {
+    return null; // No loading screen - middleware will redirect immediately
+  }
+
+
+  const handleSubmit = async (data: Partial<SupportStaffMember | NustEmployee>) => {
+    setIsSubmitting(true);
+    try {
+
+    } catch (error) {
+      // console.error('Profile creation failed:', error);
+      // Handle error
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleUserTypeSwitch = (newType: 'employee' | 'support') => {
@@ -120,67 +80,7 @@ const UserProfileForm = () => {
     }, 150);
   };
 
-  if (!hydrated || !mounted) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
-            <Loader />
-          </div>
-          <h3 className="text-xl font-semibold text-neutral-800 mb-2">Loading Portal</h3>
-          <p className="text-neutral-600">Please wait while we prepare your experience...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const getCurrentState = () => {
-    if (!exist) return 'registration';
-    if (exist && !approved) return 'waiting';
-    if (exist && approved) return 'approved';
-    return 'registration';
-  };
-
-  const currentState = getCurrentState();
-
-  if (currentState === 'waiting') {
-    return (
-      <div className="min-h-screen bg-yellow-50 flex items-center justify-center p-4 animate-fade-in">
-        <div className="max-w-2xl w-full">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white border border-gray-200 rounded-full shadow-sm">
-              <Clock className="w-5 h-5 text-yellow-600" />
-              <span className="text-sm font-semibold text-gray-700">Profile Under Review</span>
-            </div>
-          </div>
-          <WaitingForApproval />
-        </div>
-      </div>
-    );
-  }
-
-  if (currentState === 'approved') {
-    return (
-      <div className="min-h-screen bg-green-50 flex items-center justify-center p-4 animate-fade-in">
-        <div className="max-w-2xl w-full text-center">
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
-            <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-              <CheckCircle className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-3xl font-semibold text-gray-900 mb-4">Welcome to NUST Portal!</h1>
-            <p className="text-gray-600 text-lg mb-6">
-              Your profile has been approved and you&apos;re all set to use the platform.
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-              <CheckCircle className="w-4 h-4" />
-              <span>Profile Approved</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Only show registration form
   return (
     <div className="min-h-screen bg-neutral-50">
       <div className="container mx-auto px-4 py-12">
@@ -221,6 +121,33 @@ const UserProfileForm = () => {
         </div>
 
         <div className={`max-w-5xl mx-auto transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+          {/* Form submission loading overlay */}
+          {isSubmitting && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-sm w-full mx-4">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Loader />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Creating Profile</h3>
+                  <p className="text-gray-600">Please wait while we set up your account...</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* User type transition loading overlay */}
+          {isTransitioning && (
+            <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10 rounded-2xl">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Loader />
+                </div>
+                <p className="text-sm text-gray-600">Switching form...</p>
+              </div>
+            </div>
+          )}
+          
           {userType === 'support' ? (
             <SupportTeamForm
               initialUser={defaultSupportStaff}
@@ -239,8 +166,23 @@ const UserProfileForm = () => {
 
         <div className="text-center mt-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-600">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span>Secure registration powered by NUST ICT</span>
+            <div 
+              className={`w-2 h-2 rounded-full ${
+                isSubmitting 
+                  ? 'bg-blue-500 animate-bounce' 
+                  : isTransitioning 
+                    ? 'bg-yellow-500 animate-pulse' 
+                    : 'bg-green-500 animate-pulse'
+              }`}
+            ></div>
+            <span>
+              {isSubmitting 
+                ? 'Creating your profile...' 
+                : isTransitioning 
+                  ? 'Switching forms...' 
+                  : 'Secure registration powered by NUST ICT'
+              }
+            </span>
           </div>
         </div>
       </div>

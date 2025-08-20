@@ -9,7 +9,7 @@ export const unapprovedRegistrationSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   email: z.string().email(),
-  picUrl: z.string().url().nullable(),
+  picUrl: z.string().nullable(),
   phone: z.string().nullable(),
   role: z.string(),
   department: z.string(),
