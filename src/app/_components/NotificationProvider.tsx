@@ -73,6 +73,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           await utils.managerDash.getTeamComplaints.invalidate();
           if (complaintId) {
             await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+            await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
           }
           break;
 
@@ -82,6 +83,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           await utils.managerDash.getTeamComplaints.invalidate();
           if (complaintId) {
             await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+            await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
           }
           break;
 
@@ -89,8 +91,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           addToast(notif.message, 'info', 'Complaint Closed');
           await utils.managerDash.getTeamComplaints.invalidate();
           await utils.workerDash.getWorkerTickets.invalidate();
+          
           if (complaintId) {
             await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+            await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
           }
           break;
 
@@ -100,6 +104,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           await utils.managerDash.getTeamComplaints.invalidate();
           if (complaintId) {
             await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+            await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
           }
           break;
 
@@ -107,6 +112,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           addToast(notif.message, 'info', 'Comment Added');
           if (complaintId) {
             await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+            await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
           }
           break;
 
@@ -114,6 +120,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           addToast(notif.message, 'info', 'Feedback Submitted');
           if (complaintId) {
             await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+            await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
           }
           break;
 
@@ -124,6 +131,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           await utils.dash.getComplainsEmp.invalidate();
           if (complaintId) {
             await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+            await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
           }
           break;
 
@@ -134,6 +142,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             await utils.dash.getComplainsEmp.invalidate();
             if (complaintId) {
               await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+              await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
             }
             break;
         case 'COMPLAINT_FORWARDED':
@@ -141,6 +150,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             await utils.managerDash.getTeamComplaints.invalidate();
             if (complaintId) {
               await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+              await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
             }
             break;
         case 'COMPLAINT_DELETED':
@@ -149,6 +159,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             await utils.dash.getComplainsEmp.invalidate();
             if (complaintId) {
               await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+              await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
             }
             break;
 
@@ -159,6 +170,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             await utils.dash.getComplainsWorker.invalidate();
             if (complaintId) {
               await utils.complaints.getComplainInfo.invalidate({ id: complaintId });
+              await utils.complaints.getComplaintLogs.invalidate({ complaintId: complaintId });
             }
             break;
 
