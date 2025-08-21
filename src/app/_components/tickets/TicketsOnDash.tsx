@@ -97,13 +97,13 @@ const TicketsOnDash = ({ tickets, isLoading}: TicketsOnDashProps) => {
             }
 
             // Secondary sort by priority (urgent first)
-            const priorityOrder = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3 };
-            const aPriority = priorityOrder[a.priority?.toLowerCase() as keyof typeof priorityOrder] ?? 4;
-            const bPriority = priorityOrder[b.priority?.toLowerCase() as keyof typeof priorityOrder] ?? 4;
+            // const priorityOrder = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3 };
+            // const aPriority = priorityOrder[a.priority?.toLowerCase() as keyof typeof priorityOrder] ?? 4;
+            // const bPriority = priorityOrder[b.priority?.toLowerCase() as keyof typeof priorityOrder] ?? 4;
             
-            if (aPriority !== bPriority) {
-                return aPriority - bPriority;
-            }
+            // if (aPriority !== bPriority) {
+            //     return aPriority - bPriority;
+            // }
 
             // Tertiary sort by creation date (newest first)
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
