@@ -105,17 +105,17 @@ const Sidebar = () => {
       },
       roles: ['employee', 'worker', 'admin', 'manager'],
     },
-    {
-      name: 'Summary',
-      icon: TrendingUp,
-      color: 'green',
-      size: 20,
-      onClick: () => {
-        router.push('/dashboard/admin/summary');
-        setIsExpanded(false); // Close sidebar on mobile after navigation
-      },
-      roles: ['admin'],
-    },
+    // {
+    //   name: 'Summary',
+    //   icon: TrendingUp,
+    //   color: 'green',
+    //   size: 20,
+    //   onClick: () => {
+    //     router.push('/dashboard/admin/summary');
+    //     setIsExpanded(false); // Close sidebar on mobile after navigation
+    //   },
+    //   roles: ['admin'],
+    // },
     {
     name: 'Team Comparison',
     icon: BarChart2,

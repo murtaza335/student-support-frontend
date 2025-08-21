@@ -51,21 +51,20 @@ const TeamManagementDashboard: React.FC = () => {
   const teamsData: Team[] = getTeamHierarchyResponse?.data?.teams ?? [];
 
 
-    // below 3 if's are used to handle the loading state, unauthorized access, and user role verification
-    // and the same is being used in all the dashboard pages
-  
-    if (!isLoaded && isLoading) {
-      return <div className="flex min-h-screen items-center justify-center">
-        <Loader />
-        <p className="text-gray-500 pl-5">Please wait, while we authorize you...</p>
-      </div>;
-    }
-    if (isLoaded && !isSignedIn) {
-      return <LoginRequired />;
-    }
-    if (user?.publicMetadata.role !== 'admin') {
-      return <Unauthorized />;
-    }
+  // below 3 if's are used to handle the loading state, unauthorized access, and user role verification
+  // and the same is being used in all the dashboard pages
+
+  if (!isLoaded && isLoading) {
+    return <div className="flex min-h-screen items-center justify-center">
+      <Loader />
+    </div>;
+  }
+  if (isLoaded && !isSignedIn) {
+    return <LoginRequired />;
+  }
+  if (user?.publicMetadata.role !== 'admin') {
+    return <Unauthorized />;
+  }
 
   console.log('[TeamManagementDashboard] Initial teams data:', teamsData);
 
@@ -290,12 +289,12 @@ const TeamManagementDashboard: React.FC = () => {
                         <div className="flex items-center flex-1 min-w-0">
                           <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm sm:text-lg mr-3 sm:mr-5 shadow-sm flex-shrink-0">
                             {team?.manager?.picUrl ? (
-                              <Image 
-                                src={team.manager.picUrl} 
-                                alt={team.manager.name} 
-                                width={56} 
-                                height={56} 
-                                className="rounded-lg object-cover w-full h-full" 
+                              <Image
+                                src={team.manager.picUrl}
+                                alt={team.manager.name}
+                                width={56}
+                                height={56}
+                                className="rounded-lg object-cover w-full h-full"
                               />
                             ) : (
                               team?.manager?.name?.charAt(0)?.toUpperCase() ?? 'M'
@@ -353,13 +352,13 @@ const TeamManagementDashboard: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center flex-1 min-w-0">
                               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold text-xs sm:text-sm mr-3 sm:mr-4 flex-shrink-0 shadow-sm">
-                                {member.picUrl ? (
-                                  <Image 
-                                    src={member.picUrl} 
-                                    alt={member.name} 
-                                    width={48} 
-                                    height={48} 
-                                    className="rounded-lg object-cover w-full h-full" 
+                                {member?.picUrl ? (
+                                  <Image
+                                    src={member.picUrl}
+                                    alt={member.name}
+                                    width={48}
+                                    height={48}
+                                    className="rounded-lg object-cover w-full h-full"
                                   />
                                 ) : (
                                   member.name.charAt(0).toUpperCase()
@@ -397,6 +396,18 @@ const TeamManagementDashboard: React.FC = () => {
                               <Calendar className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
                               <span>Joined: {member.joinDate}</span>
                             </div>
+                          </div>
+                          {/* Worker Performance Button */}
+                          <div className="mt-3 sm:mt-4 pt-3 border-t border-gray-100">
+                            <button
+                              onClick={() => router.push(`/workerPerformance/${member.id}`)}
+                              className="w-full px-3 py-2 text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 font-medium flex items-center justify-center gap-2 border border-blue-200 hover:border-blue-300"
+                            >
+                              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
+                              Worker Performance
+                            </button>
                           </div>
                         </div>
                       ))}

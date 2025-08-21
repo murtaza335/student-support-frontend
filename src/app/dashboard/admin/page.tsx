@@ -118,7 +118,7 @@ const AdminDashboard: React.FC = () => {
       iconColor: 'text-blue-600'
     },
     {
-      title: 'Waiting Assignment',
+      title: 'Waiting',
       value: Number(overviewStats?.data?.waiting_assignment ?? 0),
       percentage: calculatePercentage(Number(overviewStats?.data?.waiting_assignment ?? 0), total),
       icon: Clock,

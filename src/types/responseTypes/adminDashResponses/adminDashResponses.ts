@@ -234,16 +234,16 @@ export const managerSchema = z.object({
   name: z.string(),
   email: z.string().email(),
   phone: z.string().nullable(),
-  picUrl: z.string().url().nullable(),
+  picUrl: z.string().nullable(),
   privileges: privilegesSchema.optional()
 });
 export type Manager = z.infer<typeof managerSchema>;
 export const memberSchema = z.object({
-  id: z.string(),
+  id: z.number(),
   name: z.string(),
   email: z.string().email(),
   phone: z.string().nullable(),
-  picUrl: z.string().url().nullable(),
+  picUrl: z.string().nullable(),
   status: teamWorkerStatusEnum,
   joinDate: z.string().date(),
   points: z.number()

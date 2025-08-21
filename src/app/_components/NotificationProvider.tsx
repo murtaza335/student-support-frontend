@@ -55,12 +55,15 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('🔔 Incoming notification:', notif);
       const { complaintId } = notif;
 
+      await utils.notifications.getNotifications.invalidate();
+
       switch (notif.type) {
         case 'COMPLAINT_CREATED':
           addToast(notif.message, 'info', 'New Complaint Created');
           playNotificationSound();
           await utils.dash.getComplainsEmp.invalidate();
           await utils.managerDash.getTeamComplaints.invalidate();
+          
           break;
 
         case 'COMPLAINT_ASSIGNED':

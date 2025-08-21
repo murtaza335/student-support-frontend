@@ -83,8 +83,9 @@ const UsersPage = () => {
       <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
           <div className="relative flex-shrink-0">
+            { user?.picUrl ? (
             <Image
-              src={user.picUrl ?? `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=e5e7eb&color=374151&size=64`}
+              src={user?.picUrl}
               alt={`${user.firstName} ${user.lastName}`}
               width={64}
               height={64}
@@ -92,7 +93,15 @@ const UsersPage = () => {
               onError={(e) => {
                 (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=e5e7eb&color=374151&size=64`;
               }}
-            />
+            />) : (
+              <Image
+                src={`https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=e5e7eb&color=374151&size=64`}
+                alt={`${user.firstName} ${user.lastName}`}
+                width={64}
+                height={64}
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100"
+              />
+            )}
             <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-5 sm:h-5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
           <div className="flex-1 min-w-0">
