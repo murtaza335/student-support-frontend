@@ -292,7 +292,7 @@ export default function TicketDetailPage() {
             {/* Desktop Actions */}
             <div className="hidden lg:flex items-center space-x-3">
               {/* Mark Complete Button - Show when currentWorkerStatus is not "resolved" */}
-              {currentWorkerStatus !== "resolved" && currentWorkerStatus !== "in_queue" && user?.publicMetadata?.role === 'worker' && (
+              {currentWorkerStatus?.toLowerCase() !== "resolved" && currentWorkerStatus?.toLowerCase() !== "in_queue" && user?.publicMetadata?.role === 'worker' && (
                 <button 
                   className="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                   onClick={() => setShowCloseModal(true)}
@@ -377,7 +377,7 @@ export default function TicketDetailPage() {
             )} */}
 
             {/* Mark Complete Button for Workers */}
-            {user?.publicMetadata?.role === 'worker' && complaint?.status !== 'resolved' && currentWorkerStatus !== "in_queue" && (
+            {user?.publicMetadata?.role === 'worker' && currentWorkerStatus?.toLowerCase() !== 'resolved' && currentWorkerStatus?.toLowerCase() !== "in_queue" && (
               <button 
                 className="flex-shrink-0 inline-flex items-center justify-center px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors touch-manipulation"
                 onClick={() => setShowCloseModal(true)}
