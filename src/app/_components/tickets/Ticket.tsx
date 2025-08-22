@@ -190,9 +190,9 @@ const ComplaintCard = ({ ticket }: TicketProps) => {
               <User2 className="w-4 h-4" />
               <span className="text-sm">{ticket?.employeeName}</span>
             </div>
-            <div className="flex items-center text-gray-500 gap-1.5">
+            <div className="flex items-center text-blue-600 gap-1.5">
               <Clock className="w-4 h-4" />
-              <span className="text-sm">{ticket?.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : 'UNKNOWN'}</span>
+              <span className="text-sm font-medium">{ticket?.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'UNKNOWN'}</span>
             </div>
           </div>
 
@@ -307,9 +307,9 @@ const ComplaintCard = ({ ticket }: TicketProps) => {
 
             {/* Date, Priority, and Activate Button */}
             <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              <div className="flex items-center text-gray-500 gap-1.5">
+              <div className="flex items-center text-blue-600 gap-1.5">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm">{ticket?.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : 'UNKNOWN'}</span>
+                <span className="text-sm font-medium">{ticket?.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'UNKNOWN'}</span>
               </div>
               
               <div className="flex items-center gap-2">
