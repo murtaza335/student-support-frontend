@@ -8,6 +8,7 @@ import { ToastProvider } from './_components/ToastProvider';
 import Footer from './_components/footer/footer';
 import Sidebar from './_components/Sidebar';
 import { SocketProvider } from './_components/NotificationProvider';
+import { Analytics } from '@vercel/analytics/react';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -44,6 +45,7 @@ export default function RootLayout({
                     <Sidebar />
                     <main className="mt-16 flex-1 overflow-x-hidden">
                       <div className="md:ml-16">{children}</div>
+                      <Analytics />
                     </main>
                   </div>
                 </div>
